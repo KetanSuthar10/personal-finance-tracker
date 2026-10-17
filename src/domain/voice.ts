@@ -225,8 +225,8 @@ export class SpeechRecognitionService {
     };
 
     instance.onerror = (event: any) => {
-      // Ignore routine silence timeouts if user is still active
-      if (event.error === 'no-speech') {
+      // Ignore routine silence timeouts and non-fatal abort events
+      if (event.error === 'no-speech' || event.error === 'aborted') {
         return;
       }
       if (event.error === 'not-allowed') {
@@ -238,19 +238,22 @@ export class SpeechRecognitionService {
         onError('Network connection error in speech recognition service.');
         return;
       }
-      onError(`Speech error: ${event.error}`);
+      onError(`Speech notice: ${event.error}`);
     };
 
     instance.onend = () => {
-      // If user did not manually stop, auto-restart to prevent premature cutoff
+      // If user did not manually stop, auto-restart with a short delay to prevent premature cutoff
       if (this.isListeningByUser) {
-        try {
-          this.recognition = this.initInstance(onResult, onError, onEnd);
-          this.recognition?.start();
-        } catch {
-          this.isListeningByUser = false;
-          onEnd();
-        }
+        setTimeout(() => {
+          if (!this.isListeningByUser) return;
+          try {
+            this.recognition = this.initInstance(onResult, onError, onEnd);
+            this.recognition?.start();
+          } catch {
+            this.isListeningByUser = false;
+            onEnd();
+          }
+        }, 150);
       } else {
         onEnd();
       }
