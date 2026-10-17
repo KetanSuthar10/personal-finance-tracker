@@ -32,6 +32,8 @@ interface LedgerContextType {
   undoImportBatch: (batchId: string) => Promise<boolean>;
   addEmiPlan: (emi: Omit<EmiPlan, 'id'>) => Promise<EmiPlan>;
   updatePlanningConfig: (config: Partial<CashPlanningConfig>) => Promise<void>;
+  exportBackup: () => Promise<string>;
+  restoreBackup: (jsonString: string) => Promise<{ success: boolean; eventCount: number; accountCount: number }>;
   resetToDemo: () => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -141,6 +143,16 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     await loadData();
   };
 
+  const exportBackup = async () => {
+    return repository.exportBackup();
+  };
+
+  const restoreBackup = async (jsonString: string) => {
+    const res = await repository.restoreBackup(jsonString);
+    await loadData();
+    return res;
+  };
+
   const resetToDemo = async () => {
     setIsLoading(true);
     await repository.resetToDemo();
@@ -172,6 +184,8 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         undoImportBatch,
         addEmiPlan,
         updatePlanningConfig,
+        exportBackup,
+        restoreBackup,
         resetToDemo,
         refresh: loadData,
       }}

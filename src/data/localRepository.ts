@@ -10,6 +10,7 @@ import {
 import { calculatePeriodSummary } from '../domain/ledger';
 import { DEMO_FIXTURE, DEMO_STATEMENTS, DEMO_EMIS, DEMO_PLANNING_CONFIG } from './demoFixture';
 import { LedgerRepository } from './repository';
+import { createBackup, validateAndParseBackup } from '../domain/backup';
 
 const STORAGE_KEY_ACCOUNTS = 'pft_accounts_v1';
 const STORAGE_KEY_EVENTS = 'pft_events_v1';
@@ -251,6 +252,45 @@ export class LocalLedgerRepository implements LedgerRepository {
     this.planningConfig = { ...this.planningConfig, ...config };
     this.persist();
     return { ...this.planningConfig };
+  }
+
+  // Backup & Restore (M3)
+  async exportBackup(): Promise<string> {
+    const payload = createBackup({
+      accounts: this.accounts,
+      events: this.events,
+      batches: this.batches,
+      statements: this.statements,
+      emiPlans: this.emiPlans,
+      planningConfig: this.planningConfig,
+    });
+    return JSON.stringify(payload, null, 2);
+  }
+
+  async restoreBackup(jsonString: string): Promise<{ success: boolean; eventCount: number; accountCount: number }> {
+    const validation = validateAndParseBackup(jsonString);
+    if (!validation.isValid || !validation.payload) {
+      throw new Error(validation.error || 'Invalid backup file.');
+    }
+
+    const { accounts, events, batches, statements, emiPlans, planningConfig } = validation.payload.data;
+
+    this.accounts = accounts;
+    this.events = events;
+    this.batches = batches || [];
+    this.statements = statements || [];
+    this.emiPlans = emiPlans || [];
+    if (planningConfig) {
+      this.planningConfig = planningConfig;
+    }
+
+    this.persist();
+
+    return {
+      success: true,
+      eventCount: this.events.length,
+      accountCount: this.accounts.length,
+    };
   }
 
   async resetToDemo(): Promise<void> {

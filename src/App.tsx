@@ -9,7 +9,7 @@ import { AddEntryModal } from './features/entry/AddEntryModal';
 import { ImportsPage } from './features/imports/ImportsPage';
 import { CommitmentsPage } from './features/commitments/CommitmentsPage';
 import { AssistantPlaceholder } from './features/placeholders/AssistantPlaceholder';
-import { SettingsPlaceholder } from './features/placeholders/SettingsPlaceholder';
+import { SettingsPage } from './features/settings/SettingsPage';
 import { FinancialEvent } from './domain/types';
 
 export const AppContent: React.FC = () => {
@@ -51,7 +51,7 @@ export const AppContent: React.FC = () => {
       {currentTab === 'imports' && <ImportsPage />}
       {currentTab === 'commitments' && <CommitmentsPage />}
       {currentTab === 'assistant' && <AssistantPlaceholder />}
-      {currentTab === 'settings' && <SettingsPlaceholder />}
+      {currentTab === 'settings' && <SettingsPage />}
 
       <AddEntryModal
         isOpen={isAddEntryOpen}

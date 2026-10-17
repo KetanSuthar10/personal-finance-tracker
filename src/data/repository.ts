@@ -28,5 +28,9 @@ export interface LedgerRepository {
   getPlanningConfig(): Promise<CashPlanningConfig>;
   updatePlanningConfig(config: Partial<CashPlanningConfig>): Promise<CashPlanningConfig>;
 
+  // Backup & Restore (M3)
+  exportBackup(): Promise<string>;
+  restoreBackup(jsonString: string): Promise<{ success: boolean; eventCount: number; accountCount: number }>;
+
   resetToDemo(): Promise<void>;
 }
