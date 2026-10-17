@@ -13,6 +13,16 @@ export interface AccountPosting {
   delta_paise: number;
 }
 
+export interface SourceObservation {
+  id: string;
+  source_type: 'manual' | 'statement_import';
+  batch_id?: string;
+  raw_description?: string;
+  ref_no?: string;
+  extracted_date?: string;
+  extracted_amount_paise?: number;
+}
+
 export interface FinancialEvent {
   id: string;
   date: string; // YYYY-MM-DD in Asia/Kolkata
@@ -24,7 +34,37 @@ export interface FinancialEvent {
   postings: AccountPosting[];
   linked_purchase_id?: string;
   notes?: string;
+  source_observations?: SourceObservation[];
 }
+
+export interface ImportBatch {
+  id: string;
+  filename: string;
+  account_id: string;
+  imported_at: string;
+  row_count: number;
+  created_event_ids: string[];
+  merged_event_ids: string[];
+  status: 'active' | 'undone';
+}
+
+export type MatchStatus = 'NEW_RECORD' | 'EXACT_MATCH' | 'UNCERTAIN_MATCH' | 'DUPLICATE_IMPORT';
+
+export interface ImportRowCandidate {
+  row_index: number;
+  date: string;
+  description: string;
+  ref_no?: string;
+  debit_paise: number;
+  credit_paise: number;
+  delta_paise: number;
+  inferred_type: EventType;
+  inferred_category: string | null;
+  match_status: MatchStatus;
+  matched_event_id?: string;
+  confidence_reason?: string;
+}
+
 
 export interface Account {
   id: string;

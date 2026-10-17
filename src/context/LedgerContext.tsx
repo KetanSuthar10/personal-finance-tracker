@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { Account, FinancialEvent, PeriodSummary } from '../domain/types';
+import { Account, FinancialEvent, PeriodSummary, ImportBatch } from '../domain/types';
 import { LocalLedgerRepository } from '../data/localRepository';
 import { DEMO_FIXTURE } from '../data/demoFixture';
 
 interface LedgerContextType {
   accounts: Account[];
   events: FinancialEvent[];
+  batches: ImportBatch[];
   summary: PeriodSummary | null;
   period: { from: string; through: string };
   setPeriod: (period: { from: string; through: string }) => void;
@@ -13,6 +14,8 @@ interface LedgerContextType {
   addEvent: (eventData: Omit<FinancialEvent, 'id'>) => Promise<FinancialEvent>;
   updateEvent: (id: string, updates: Partial<FinancialEvent>) => Promise<FinancialEvent>;
   deleteEvent: (id: string) => Promise<boolean>;
+  commitImportBatch: (batch: ImportBatch, newEvents: FinancialEvent[], updatedEvents: FinancialEvent[]) => Promise<void>;
+  undoImportBatch: (batchId: string) => Promise<boolean>;
   resetToDemo: () => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -23,6 +26,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const repository = useMemo(() => new LocalLedgerRepository(), []);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [events, setEvents] = useState<FinancialEvent[]>([]);
+  const [batches, setBatches] = useState<ImportBatch[]>([]);
   const [summary, setSummary] = useState<PeriodSummary | null>(null);
   const [period, setPeriod] = useState<{ from: string; through: string }>({
     from: DEMO_FIXTURE.period.from,
@@ -32,14 +36,16 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const loadData = useCallback(async () => {
     try {
-      const [accs, evts, sum] = await Promise.all([
+      const [accs, evts, sum, bts] = await Promise.all([
         repository.getAccounts(),
         repository.getEvents(),
         repository.getSummary(period.from, period.through),
+        repository.getImportBatches(),
       ]);
       setAccounts(accs);
       setEvents(evts);
       setSummary(sum);
+      setBatches(bts);
     } finally {
       setIsLoading(false);
     }
@@ -67,6 +73,23 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return deleted;
   };
 
+  const commitImportBatch = async (
+    batch: ImportBatch,
+    newEvents: FinancialEvent[],
+    updatedEvents: FinancialEvent[]
+  ) => {
+    await repository.commitImportBatch(batch, newEvents, updatedEvents);
+    await loadData();
+  };
+
+  const undoImportBatch = async (batchId: string) => {
+    const success = await repository.undoImportBatch(batchId);
+    if (success) {
+      await loadData();
+    }
+    return success;
+  };
+
   const resetToDemo = async () => {
     setIsLoading(true);
     await repository.resetToDemo();
@@ -82,6 +105,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       value={{
         accounts,
         events,
+        batches,
         summary,
         period,
         setPeriod,
@@ -89,6 +113,8 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         addEvent,
         updateEvent,
         deleteEvent,
+        commitImportBatch,
+        undoImportBatch,
         resetToDemo,
         refresh: loadData,
       }}

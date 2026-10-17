@@ -23,7 +23,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
     { id: 'overview' as TabId, label: 'Overview', icon: LayoutDashboard, milestone: 'M1' as const, live: true },
     { id: 'accounts' as TabId, label: 'Accounts', icon: Wallet, milestone: 'M1' as const, live: true },
     { id: 'transactions' as TabId, label: 'Transactions', icon: ArrowLeftRight, milestone: 'M1' as const, live: true },
-    { id: 'imports' as TabId, label: 'Statements & Imports', icon: FileSpreadsheet, milestone: 'M2' as const, live: false },
+    { id: 'imports' as TabId, label: 'Statements & Imports', icon: FileSpreadsheet, milestone: 'M2' as const, live: true },
     { id: 'commitments' as TabId, label: 'Cards & EMIs', icon: CreditCard, milestone: 'M4' as const, live: false },
     { id: 'assistant' as TabId, label: 'Gemini Assistant', icon: Bot, milestone: 'M5' as const, live: false },
     { id: 'settings' as TabId, label: 'Settings & Sync', icon: Settings, milestone: 'M3' as const, live: false },

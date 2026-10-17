@@ -6,7 +6,7 @@ import { OverviewPage } from './features/overview/OverviewPage';
 import { AccountsPage } from './features/accounts/AccountsPage';
 import { TransactionsPage } from './features/transactions/TransactionsPage';
 import { AddEntryModal } from './features/entry/AddEntryModal';
-import { ImportsPlaceholder } from './features/placeholders/ImportsPlaceholder';
+import { ImportsPage } from './features/imports/ImportsPage';
 import { CommitmentsPlaceholder } from './features/placeholders/CommitmentsPlaceholder';
 import { AssistantPlaceholder } from './features/placeholders/AssistantPlaceholder';
 import { SettingsPlaceholder } from './features/placeholders/SettingsPlaceholder';
@@ -48,7 +48,7 @@ export const AppContent: React.FC = () => {
         />
       )}
 
-      {currentTab === 'imports' && <ImportsPlaceholder />}
+      {currentTab === 'imports' && <ImportsPage />}
       {currentTab === 'commitments' && <CommitmentsPlaceholder />}
       {currentTab === 'assistant' && <AssistantPlaceholder />}
       {currentTab === 'settings' && <SettingsPlaceholder />}
