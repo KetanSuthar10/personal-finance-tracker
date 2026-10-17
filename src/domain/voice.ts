@@ -171,71 +171,125 @@ export const SAMPLE_VOICE_TRANSCRIPTS = [
 ];
 
 /**
- * Browser Speech Recognition Helper
+ * Robust Browser Speech Recognition Helper
  */
 export class SpeechRecognitionService {
   private recognition: any = null;
   public isSupported: boolean = false;
+  private isListeningByUser: boolean = false;
+  private accumulatedFinalText: string = '';
 
   constructor() {
     if (typeof window !== 'undefined') {
       const SpeechRecognition =
         (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        this.recognition = new SpeechRecognition();
-        this.recognition.continuous = false;
-        this.recognition.interimResults = true;
-        this.recognition.lang = 'en-IN';
-        this.isSupported = true;
-      }
+      this.isSupported = Boolean(SpeechRecognition);
     }
+  }
+
+  private initInstance(
+    onResult: (transcript: string, isFinal: boolean) => void,
+    onError: (err: string) => void,
+    onEnd: () => void
+  ) {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) return null;
+
+    const instance = new SpeechRecognition();
+    instance.continuous = true;
+    instance.interimResults = true;
+    instance.lang = 'en-IN';
+    instance.maxAlternatives = 1;
+
+    instance.onresult = (event: any) => {
+      let finalChunk = '';
+      let interimChunk = '';
+
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        const text = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalChunk += text + ' ';
+        } else {
+          interimChunk += text;
+        }
+      }
+
+      if (finalChunk) {
+        this.accumulatedFinalText += finalChunk;
+      }
+
+      const combined = (this.accumulatedFinalText + ' ' + interimChunk).trim();
+      onResult(combined, Boolean(finalChunk && !interimChunk));
+    };
+
+    instance.onerror = (event: any) => {
+      // Ignore routine silence timeouts if user is still active
+      if (event.error === 'no-speech') {
+        return;
+      }
+      if (event.error === 'not-allowed') {
+        this.isListeningByUser = false;
+        onError('Microphone permission was denied. Please allow microphone access in your browser address bar.');
+        return;
+      }
+      if (event.error === 'network') {
+        onError('Network connection error in speech recognition service.');
+        return;
+      }
+      onError(`Speech error: ${event.error}`);
+    };
+
+    instance.onend = () => {
+      // If user did not manually stop, auto-restart to prevent premature cutoff
+      if (this.isListeningByUser) {
+        try {
+          this.recognition = this.initInstance(onResult, onError, onEnd);
+          this.recognition?.start();
+        } catch {
+          this.isListeningByUser = false;
+          onEnd();
+        }
+      } else {
+        onEnd();
+      }
+    };
+
+    return instance;
   }
 
   start(
     onResult: (transcript: string, isFinal: boolean) => void,
-    onError: (err: any) => void,
+    onError: (err: string) => void,
     onEnd: () => void
   ) {
-    if (!this.recognition) {
-      onError(new Error('Speech recognition is not supported in this browser.'));
+    if (!this.isSupported) {
+      onError('Live speech recognition is not supported in this browser.');
       return;
     }
 
-    this.recognition.onresult = (event: any) => {
-      let interim = '';
-      let final = '';
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        if (event.results[i].isFinal) {
-          final += event.results[i][0].transcript;
-        } else {
-          interim += event.results[i][0].transcript;
-        }
-      }
-      onResult(final || interim, Boolean(final));
-    };
-
-    this.recognition.onerror = (event: any) => {
-      onError(event.error);
-    };
-
-    this.recognition.onend = () => {
-      onEnd();
-    };
+    this.isListeningByUser = true;
+    this.accumulatedFinalText = '';
 
     try {
-      this.recognition.start();
-    } catch (e) {
-      // Already started
+      this.recognition = this.initInstance(onResult, onError, onEnd);
+      this.recognition?.start();
+    } catch (e: any) {
+      onError(`Could not start microphone: ${e.message || e}`);
+      this.isListeningByUser = false;
     }
   }
 
   stop() {
+    this.isListeningByUser = false;
     if (this.recognition) {
       try {
         this.recognition.stop();
-      } catch (e) {
+      } catch {
         // Ignore
       }
+      this.recognition = null;
     }
   }
 }

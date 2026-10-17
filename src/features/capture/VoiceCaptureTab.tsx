@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Account, EventType } from '../../domain/types';
 import {
   parseVoiceTranscript,
@@ -31,6 +31,7 @@ export const VoiceCaptureTab: React.FC<VoiceCaptureTabProps> = ({
   const [transcript, setTranscript] = useState('');
   const [parsedEntry, setParsedEntry] = useState<ParsedVoiceEntry | null>(null);
   const [recognitionError, setRecognitionError] = useState<string | null>(null);
+  const [audioLevel, setAudioLevel] = useState(0);
 
   // Editable fields
   const [amountRupees, setAmountRupees] = useState('');
@@ -42,15 +43,69 @@ export const VoiceCaptureTab: React.FC<VoiceCaptureTabProps> = ({
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   const speechServiceRef = useRef<SpeechRecognitionService | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const animFrameRef = useRef<number | null>(null);
+
+  const stopAudioMeter = useCallback(() => {
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(t => t.stop());
+      mediaStreamRef.current = null;
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close().catch(() => {});
+      audioContextRef.current = null;
+    }
+    setAudioLevel(0);
+  }, []);
+
+  const startAudioMeter = useCallback(async () => {
+    try {
+      if (typeof window === 'undefined' || !navigator.mediaDevices?.getUserMedia) return;
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+
+      const ctx = new AudioCtx();
+      audioContextRef.current = ctx;
+      const source = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 64;
+      source.connect(analyser);
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      const updateLevel = () => {
+        if (!mediaStreamRef.current) return;
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          sum += dataArray[i];
+        }
+        const avg = sum / dataArray.length;
+        setAudioLevel(Math.min(100, Math.round((avg / 128) * 100)));
+        animFrameRef.current = requestAnimationFrame(updateLevel);
+      };
+      updateLevel();
+    } catch (err: any) {
+      console.warn('Microphone hardware check warning:', err);
+    }
+  }, []);
 
   useEffect(() => {
     speechServiceRef.current = new SpeechRecognitionService();
     return () => {
       speechServiceRef.current?.stop();
+      stopAudioMeter();
     };
-  }, []);
+  }, [stopAudioMeter]);
 
-  const handleApplyParsed = (parsed: ParsedVoiceEntry) => {
+  const handleApplyParsed = useCallback((parsed: ParsedVoiceEntry) => {
     setParsedEntry(parsed);
     setTranscript(parsed.rawTranscript);
     setType(parsed.type);
@@ -68,7 +123,6 @@ export const VoiceCaptureTab: React.FC<VoiceCaptureTabProps> = ({
       setCategory(parsed.category);
     }
 
-    // Try to match account hint
     if (parsed.account_hint) {
       const match = accounts.find(
         a =>
@@ -79,46 +133,58 @@ export const VoiceCaptureTab: React.FC<VoiceCaptureTabProps> = ({
         setAccountId(match.id);
       }
     }
-  };
+  }, [accounts]);
 
   const handleSelectSample = (sample: string) => {
     const parsed = parseVoiceTranscript(sample);
     handleApplyParsed(parsed);
   };
 
-  const handleToggleRecording = () => {
-    if (isRecording) {
-      speechServiceRef.current?.stop();
-      setIsRecording(false);
-      return;
-    }
-
+  const handleStartRecording = async () => {
     setRecognitionError(null);
+
     if (!speechServiceRef.current?.isSupported) {
       setRecognitionError(
-        'Live speech recognition is not supported in this browser. You can type below or click one of the realistic spoken samples!'
+        'Speech recognition is not supported in this browser. Try Chrome/Edge or click a sample phrase below.'
       );
       return;
     }
 
     setIsRecording(true);
+    await startAudioMeter();
+
     speechServiceRef.current.start(
-      (text, isFinal) => {
+      (text) => {
+        // Update live transcript and continuous live parse without terminating recording
         setTranscript(text);
-        if (isFinal) {
+        if (text.trim().length > 3) {
           const parsed = parseVoiceTranscript(text);
           handleApplyParsed(parsed);
-          setIsRecording(false);
         }
       },
-      err => {
-        setRecognitionError(`Microphone notice: ${err}`);
+      (err) => {
+        setRecognitionError(err);
         setIsRecording(false);
+        stopAudioMeter();
       },
       () => {
+        // Will only be called if recognition actually ends
         setIsRecording(false);
+        stopAudioMeter();
       }
     );
+  };
+
+  const handleStopRecording = () => {
+    setIsRecording(false);
+    speechServiceRef.current?.stop();
+    stopAudioMeter();
+
+    // Finalize parsing
+    if (transcript.trim()) {
+      const finalParsed = parseVoiceTranscript(transcript.trim());
+      handleApplyParsed(finalParsed);
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -151,9 +217,9 @@ export const VoiceCaptureTab: React.FC<VoiceCaptureTabProps> = ({
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-            Quick Test With Spoken Voice Transcripts
+            Quick Test With Sample Voice Transcripts
           </span>
-          <span className="text-[11px] text-slate-500">1-click natural test</span>
+          <span className="text-[11px] text-slate-500">1-click test</span>
         </div>
         <div className="flex flex-wrap gap-1.5">
           {SAMPLE_VOICE_TRANSCRIPTS.map((s, idx) => (
@@ -169,29 +235,76 @@ export const VoiceCaptureTab: React.FC<VoiceCaptureTabProps> = ({
         </div>
       </div>
 
-      {/* Voice Recording Control */}
+      {/* Voice Recording Control with Audio Level Feedback */}
       <div className="p-6 rounded-2xl bg-slate-950/60 border border-slate-800 flex flex-col items-center justify-center space-y-3">
-        <button
-          type="button"
-          onClick={handleToggleRecording}
-          className={`h-16 w-16 rounded-full flex items-center justify-center text-2xl transition-all shadow-lg ${
-            isRecording
-              ? 'bg-rose-600 animate-pulse ring-4 ring-rose-500/40 text-white scale-110'
-              : 'bg-indigo-600 hover:bg-indigo-500 text-white hover:scale-105'
-          }`}
-          title={isRecording ? 'Click to stop listening' : 'Click to start speaking'}
-        >
-          {isRecording ? '⏹' : '🎙️'}
-        </button>
+        <div className="relative">
+          <button
+            type="button"
+            onClick={isRecording ? handleStopRecording : handleStartRecording}
+            className={`h-20 w-20 rounded-full flex items-center justify-center text-3xl transition-all shadow-xl z-10 relative ${
+              isRecording
+                ? 'bg-rose-600 text-white ring-4 ring-rose-500/50 scale-105'
+                : 'bg-indigo-600 hover:bg-indigo-500 text-white hover:scale-105'
+            }`}
+            title={isRecording ? 'Click to stop listening' : 'Click to start speaking'}
+          >
+            {isRecording ? '⏹' : '🎙️'}
+          </button>
 
-        <div className="text-center">
-          <span className="text-sm font-semibold text-white block">
-            {isRecording ? 'Listening... speak clearly into your mic' : 'Click microphone to dictate transaction'}
-          </span>
-          <span className="text-xs text-slate-400">
-            Try saying: "Paid 180 rupees for coffee at Blue Tokai via HDFC"
-          </span>
+          {/* Sound waves ring */}
+          {isRecording && (
+            <span
+              className="absolute inset-0 rounded-full bg-rose-500 opacity-40 animate-ping pointer-events-none"
+              style={{ animationDuration: `${Math.max(0.6, 2 - (audioLevel / 50))}s` }}
+            />
+          )}
         </div>
+
+        <div className="text-center space-y-1">
+          <div className="flex items-center justify-center gap-2">
+            <span className="text-sm font-semibold text-white">
+              {isRecording ? 'Microphone Active & Listening' : 'Click microphone to start dictation'}
+            </span>
+            {isRecording && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                Recording
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-slate-400">
+            {isRecording
+              ? 'Speak naturally at your own pace. Click the red button when finished.'
+              : 'Try saying: "Paid 180 rupees for coffee at Blue Tokai via HDFC"'}
+          </p>
+        </div>
+
+        {/* Live Audio Visualizer Bars */}
+        {isRecording && (
+          <div className="flex items-center gap-1.5 h-6 px-4 py-1 rounded-full bg-slate-900 border border-slate-800">
+            <span className="text-[10px] text-slate-500 font-mono mr-1">MIC:</span>
+            {[0.4, 0.7, 1.0, 0.8, 0.5].map((multiplier, i) => (
+              <div
+                key={i}
+                className="w-1.5 rounded-full bg-emerald-400 transition-all duration-75"
+                style={{
+                  height: `${Math.max(4, Math.min(20, (audioLevel * multiplier) / 4))}px`
+                }}
+              />
+            ))}
+            <span className="text-[10px] text-emerald-400 font-mono ml-1">{audioLevel}%</span>
+          </div>
+        )}
+
+        {/* Stop button when recording */}
+        {isRecording && (
+          <button
+            type="button"
+            onClick={handleStopRecording}
+            className="px-5 py-2 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-300 border border-rose-500/30 transition-all flex items-center gap-2 shadow-sm"
+          >
+            <span>⏹</span> Stop Listening & Process
+          </button>
+        )}
 
         {recognitionError && (
           <div className="text-xs text-amber-300 bg-amber-950/30 p-2.5 rounded-lg border border-amber-500/20 max-w-md text-center">
@@ -199,7 +312,7 @@ export const VoiceCaptureTab: React.FC<VoiceCaptureTabProps> = ({
           </div>
         )}
 
-        {/* Live transcript bubble */}
+        {/* Real-time transcript box */}
         {transcript && (
           <div className="w-full max-w-lg p-3 rounded-xl bg-slate-900/90 border border-indigo-500/30 text-xs text-slate-200 text-center italic">
             "{transcript}"
