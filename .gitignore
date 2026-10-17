@@ -1,0 +1,43 @@
+# Dependencies and generated app output
+node_modules/
+dist/
+build/
+coverage/
+.vite/
+playwright-report/
+test-results/
+
+# Credentials and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json
+service-account*.json
+
+# Private financial files and local databases
+private-data/
+statements/
+receipts/
+screenshots-private/
+backups/
+exports/
+*.pdf
+*.xlsx
+*.xls
+*.csv
+*.tsv
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+*.sql.gz
+
+# Logs and OS/editor noise
+*.log
+.DS_Store
+Thumbs.db
+.idea/
