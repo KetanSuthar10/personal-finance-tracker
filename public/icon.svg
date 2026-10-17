@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="pwa-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f46e5" />
+      <stop offset="100%" stop-color="#1e1b4b" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#pwa-grad)" />
+  <path d="M176 144h160M176 192h160M176 240h96a56 56 0 0 0 0-112M240 240l88 128" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+</svg>

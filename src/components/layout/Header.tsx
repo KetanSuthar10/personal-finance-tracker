@@ -1,14 +1,14 @@
-import React from 'react';
-import { Plus, RotateCcw, ShieldCheck, Calendar } from 'lucide-react';
+import { Plus, RotateCcw, ShieldCheck, Calendar, Camera } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { useLedger } from '../../context/LedgerContext';
 
 export interface HeaderProps {
   onOpenAddEntry: () => void;
+  onOpenCapture?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onOpenAddEntry }) => {
+export const Header: React.FC<HeaderProps> = ({ onOpenAddEntry, onOpenCapture }) => {
   const { period, resetToDemo, isLoading } = useLedger();
 
   return (
@@ -52,6 +52,19 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAddEntry }) => {
           <RotateCcw className="w-3.5 h-3.5" />
           <span className="hidden md:inline">Reset Demo</span>
         </Button>
+
+        {onOpenCapture && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onOpenCapture}
+            className="border-indigo-300 text-indigo-700 hover:bg-indigo-50 shadow-sm"
+            title="Scan receipt OCR or dictate voice note"
+          >
+            <Camera className="w-3.5 h-3.5 text-indigo-600" />
+            <span className="hidden sm:inline">Scan / Dictate</span>
+          </Button>
+        )}
 
         <Button size="sm" onClick={onOpenAddEntry} className="shadow-indigo-100">
           <Plus className="w-4 h-4" />

@@ -5,11 +5,13 @@ import { MobileNav } from './MobileNav';
 import { Modal } from '../ui/Modal';
 import { FileSpreadsheet, CreditCard, Bot, Settings } from 'lucide-react';
 import { MilestoneBadge } from '../common/MilestoneBadge';
+import { OfflineBanner } from '../common/OfflineBanner';
 
 export interface ShellProps {
   currentTab: TabId;
   onSelectTab: (tab: TabId) => void;
   onOpenAddEntry: () => void;
+  onOpenCapture?: () => void;
   children: React.ReactNode;
 }
 
@@ -17,6 +19,7 @@ export const Shell: React.FC<ShellProps> = ({
   currentTab,
   onSelectTab,
   onOpenAddEntry,
+  onOpenCapture,
   children,
 }) => {
   const [isMoreOpen, setIsMoreOpen] = useState(false);
@@ -30,7 +33,8 @@ export const Shell: React.FC<ShellProps> = ({
 
   return (
     <div className="flex h-screen w-full flex-col bg-slate-50 overflow-hidden">
-      <Header onOpenAddEntry={onOpenAddEntry} />
+      <OfflineBanner />
+      <Header onOpenAddEntry={onOpenAddEntry} onOpenCapture={onOpenCapture} />
 
       <div className="flex flex-1 overflow-hidden">
         <Sidebar currentTab={currentTab} onSelectTab={onSelectTab} />
@@ -77,10 +81,10 @@ export const Shell: React.FC<ShellProps> = ({
                   </div>
                   <div>
                     <p className="text-sm font-semibold">{item.label}</p>
-                    <p className="text-xs text-slate-500">Planned for {item.milestone}</p>
+                    <p className="text-xs text-slate-500">{item.milestone} Completed</p>
                   </div>
                 </div>
-                <MilestoneBadge milestone={item.milestone} status="planned" />
+                <MilestoneBadge milestone={item.milestone} status="live" />
               </button>
             );
           })}

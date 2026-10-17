@@ -12,9 +12,14 @@ import { AssistantPage } from './features/assistant/AssistantPage';
 import { SettingsPage } from './features/settings/SettingsPage';
 import { FinancialEvent } from './domain/types';
 
+import { QuickCaptureModal } from './features/capture/QuickCaptureModal';
+import { useLedger } from './context/LedgerContext';
+
 export const AppContent: React.FC = () => {
+  const { accounts, addEvent } = useLedger();
   const [currentTab, setCurrentTab] = useState<TabId>('overview');
   const [isAddEntryOpen, setIsAddEntryOpen] = useState(false);
+  const [isCaptureOpen, setIsCaptureOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<FinancialEvent | null>(null);
 
   const handleSelectEvent = (event: FinancialEvent | null) => {
@@ -30,6 +35,7 @@ export const AppContent: React.FC = () => {
       currentTab={currentTab}
       onSelectTab={setCurrentTab}
       onOpenAddEntry={() => setIsAddEntryOpen(true)}
+      onOpenCapture={() => setIsCaptureOpen(true)}
     >
       {currentTab === 'overview' && (
         <OverviewPage
@@ -56,6 +62,13 @@ export const AppContent: React.FC = () => {
       <AddEntryModal
         isOpen={isAddEntryOpen}
         onClose={() => setIsAddEntryOpen(false)}
+      />
+
+      <QuickCaptureModal
+        isOpen={isCaptureOpen}
+        onClose={() => setIsCaptureOpen(false)}
+        accounts={accounts}
+        onAddEvent={addEvent}
       />
     </Shell>
   );

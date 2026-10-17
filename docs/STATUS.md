@@ -4,7 +4,7 @@ Updated: 18 October 2026, Asia/Kolkata
 
 ## Current state
 
-Milestones M1, M2, M3, M4, and M5 are complete and verified. The application includes a grounded Gemini AI financial assistant featuring bounded deterministic tools, strict separation of arithmetic authority, account identifier and PII masking, interactive action draft approvals (preventing arbitrary state mutations), explicit categorisation rule learning with precedence, and resilient offline/quota fallback. All 46 automated unit tests pass cleanly across 9 test suites, and the production build compiles with zero errors.
+Milestones M0 through M6 are complete and verified. The application includes a unified multi-mode capture workflow (`QuickCaptureModal.tsx`) featuring client-side receipt/payment screenshot OCR (`src/domain/ocr.ts`), live Web Speech API voice dictation & audio notes parsing (`src/domain/voice.ts`), fast natural language shorthand entry, PWA installability with offline service worker (`public/sw.js`, `public/manifest.webmanifest`), and non-intrusive offline connectivity alerts (`OfflineBanner.tsx`). All 58 automated unit tests pass cleanly across 11 test suites, and the production build compiles with zero errors.
 
 | Milestone | Status |
 | --- | --- |
@@ -15,23 +15,24 @@ Milestones M1, M2, M3, M4, and M5 are complete and verified. The application inc
 | M3 connected storage/auth | Complete and verified (`docs/M3_TASK_PLAN.md`, SQL schema & RLS, export/restore engine) |
 | M4 cards/EMIs & planning | Complete and verified (`docs/M4_TASK_PLAN.md`, card statements, EMIs, planning horizon) |
 | M5 Gemini integration | Complete and verified (`docs/M5_TASK_PLAN.md`, bounded tools, rules engine, assistant UI) |
-| M6 capture/release | Next milestone (OCR, voice notes, PWA installability, and release polish) |
-| M7 optional n8n | Not selected |
+| M6 capture/release | Complete and verified (`docs/M6_TASK_PLAN.md`, OCR, voice dictation, PWA polish) |
+| M7 optional n8n | Ready for decision / optional automation flows |
 
 ## Immediate next action
 
-Review the running application at `http://127.0.0.1:5173/` under the "AI Assistant" tab. Await user instruction to proceed to Milestone M6 (Receipt OCR, voice-to-text capture, and PWA release polish).
+Review the running application at `http://127.0.0.1:5173/`. Test the "Scan / Dictate" button in the header across all three capture modes (📸 Screenshot OCR, 🎙️ Voice & Audio Notes, ⚡ Fast Text Entry). Await user direction on optional M7 automated n8n jobs or final deployment.
 
 ## True blockers
 
-None for local development. For future milestones:
-- M6 real device audio/OCR depends on browser media permissions and test fixtures.
+None for local development.
 
 ## Latest validation evidence
 
 1. **Automated Unit Tests (`npm test`)**:
-   - `src/tests/assistant.test.ts`: 8/8 tests passed. Verified identifier masking (cards, accounts, PAN, phone numbers), deterministic safe integer paise execution for `get_period_summary`, `get_account_balances`, and `get_upcoming_commitments`, draft proposal generation without silent state mutation, and resilient local engine conversational handling.
-   - `src/tests/rules.test.ts`: 5/5 tests passed. Verified substring rule matching, precedence of specific merchant patterns over generic ones, account-specific rule precedence, and transaction categorisation without overwriting existing manual categories.
+   - `src/tests/ocr.test.ts`: 7/7 tests passed. Verified text extraction across Google Pay, PhonePe, Paytm, and POS store receipts, date normalization to `YYYY-MM-DD`, merchant category auto-suggestion, and robust empty/gibberish handling.
+   - `src/tests/voice.test.ts`: 5/5 tests passed. Verified Indian English spoken number translation (`wordsToNumber`), utterance parsing for purchases, freelance income, and shorthand dictations (`120 cafe, UPI`).
+   - `src/tests/assistant.test.ts`: 8/8 tests passed.
+   - `src/tests/rules.test.ts`: 5/5 tests passed.
    - `src/tests/backup.test.ts`: 6/6 tests passed.
    - `src/tests/cards.test.ts`: 5/5 tests passed.
    - `src/tests/reconciliation.test.ts`: 4/4 tests passed.
@@ -39,7 +40,7 @@ None for local development. For future milestones:
    - `src/tests/ledger.test.ts`: 6/6 tests passed.
    - `src/tests/money.test.ts`: 6/6 tests passed.
    - `src/tests/repository.test.ts`: 3/3 tests passed.
-   - **Total test suite: 46/46 passed across 9 test suites.**
+   - **Total test suite: 58/58 passed across 11 test suites.**
 2. **TypeScript & Production Build (`npm run build`)**:
    - Passed strictly with code 0 (`tsc && vite build`).
 3. **Local Development Server**:

@@ -1,0 +1,18 @@
+{
+  "name": "Personal Finance Tracker",
+  "short_name": "FinanceTracker",
+  "description": "Personal finance app with deterministic integer paise ledger, statement reconciliation, credit cards & EMIs, and grounded Gemini assistant.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#4f46e5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
