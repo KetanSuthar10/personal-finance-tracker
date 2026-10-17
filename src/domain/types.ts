@@ -158,3 +158,51 @@ export interface DemoFixture {
   };
   notes: string[];
 }
+
+export interface CategoryRule {
+  id: string;
+  recipient_pattern: string;
+  category: string;
+  account_id?: string;
+  created_at: string;
+  match_count: number;
+}
+
+export interface ToolCallExecution {
+  name: string;
+  arguments: Record<string, unknown>;
+  result?: Record<string, unknown>;
+  supporting_record_count?: number;
+}
+
+export interface ActionProposal {
+  type: 'create_entry' | 'create_rule';
+  payload: {
+    entry?: {
+      type: EventType;
+      amount_paise: number;
+      date: string;
+      account_id: string;
+      recipient: string;
+      category?: string;
+      notes?: string;
+    };
+    rule?: {
+      recipient_pattern: string;
+      category: string;
+      account_id?: string;
+    };
+  };
+  status: 'pending' | 'accepted' | 'dismissed';
+}
+
+export interface AssistantMessage {
+  id: string;
+  sender: 'user' | 'assistant' | 'system';
+  text: string;
+  timestamp: string;
+  tool_calls?: ToolCallExecution[];
+  action_proposal?: ActionProposal;
+  token_estimate?: number;
+  is_mock?: boolean;
+}

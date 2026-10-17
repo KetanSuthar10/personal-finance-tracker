@@ -8,7 +8,7 @@ import { TransactionsPage } from './features/transactions/TransactionsPage';
 import { AddEntryModal } from './features/entry/AddEntryModal';
 import { ImportsPage } from './features/imports/ImportsPage';
 import { CommitmentsPage } from './features/commitments/CommitmentsPage';
-import { AssistantPlaceholder } from './features/placeholders/AssistantPlaceholder';
+import { AssistantPage } from './features/assistant/AssistantPage';
 import { SettingsPage } from './features/settings/SettingsPage';
 import { FinancialEvent } from './domain/types';
 
@@ -50,7 +50,7 @@ export const AppContent: React.FC = () => {
 
       {currentTab === 'imports' && <ImportsPage />}
       {currentTab === 'commitments' && <CommitmentsPage />}
-      {currentTab === 'assistant' && <AssistantPlaceholder />}
+      {currentTab === 'assistant' && <AssistantPage />}
       {currentTab === 'settings' && <SettingsPage />}
 
       <AddEntryModal

@@ -8,6 +8,7 @@ import {
   EmiPlan,
   CashPlanningConfig,
   CashPlanningSummary,
+  CategoryRule,
 } from '../domain/types';
 import { LocalLedgerRepository } from '../data/localRepository';
 import { DEMO_FIXTURE } from '../data/demoFixture';
@@ -19,6 +20,7 @@ interface LedgerContextType {
   batches: ImportBatch[];
   statements: CardStatement[];
   emiPlans: EmiPlan[];
+  categoryRules: CategoryRule[];
   planningConfig: CashPlanningConfig;
   planningSummary: CashPlanningSummary | null;
   summary: PeriodSummary | null;
@@ -32,6 +34,8 @@ interface LedgerContextType {
   undoImportBatch: (batchId: string) => Promise<boolean>;
   addEmiPlan: (emi: Omit<EmiPlan, 'id'>) => Promise<EmiPlan>;
   updatePlanningConfig: (config: Partial<CashPlanningConfig>) => Promise<void>;
+  addCategoryRule: (rule: Omit<CategoryRule, 'id' | 'created_at' | 'match_count'>) => Promise<CategoryRule>;
+  deleteCategoryRule: (id: string) => Promise<boolean>;
   exportBackup: () => Promise<string>;
   restoreBackup: (jsonString: string) => Promise<{ success: boolean; eventCount: number; accountCount: number }>;
   resetToDemo: () => Promise<void>;
@@ -47,6 +51,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [batches, setBatches] = useState<ImportBatch[]>([]);
   const [statements, setStatements] = useState<CardStatement[]>([]);
   const [emiPlans, setEmiPlans] = useState<EmiPlan[]>([]);
+  const [categoryRules, setCategoryRules] = useState<CategoryRule[]>([]);
   const [planningConfig, setPlanningConfig] = useState<CashPlanningConfig>({
     horizon_days: 30,
     emergency_buffer_paise: 200000,
@@ -60,7 +65,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const loadData = useCallback(async () => {
     try {
-      const [accs, evts, sum, bts, stmts, emis, planCfg] = await Promise.all([
+      const [accs, evts, sum, bts, stmts, emis, planCfg, rules] = await Promise.all([
         repository.getAccounts(),
         repository.getEvents(),
         repository.getSummary(period.from, period.through),
@@ -68,6 +73,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         repository.getCardStatements(),
         repository.getEmiPlans(),
         repository.getPlanningConfig(),
+        repository.getCategoryRules(),
       ]);
       setAccounts(accs);
       setEvents(evts);
@@ -76,6 +82,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setStatements(stmts);
       setEmiPlans(emis);
       setPlanningConfig(planCfg);
+      setCategoryRules(rules);
     } finally {
       setIsLoading(false);
     }
@@ -143,6 +150,20 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     await loadData();
   };
 
+  const addCategoryRule = async (rule: Omit<CategoryRule, 'id' | 'created_at' | 'match_count'>) => {
+    const created = await repository.addCategoryRule(rule);
+    await loadData();
+    return created;
+  };
+
+  const deleteCategoryRule = async (id: string) => {
+    const deleted = await repository.deleteCategoryRule(id);
+    if (deleted) {
+      await loadData();
+    }
+    return deleted;
+  };
+
   const exportBackup = async () => {
     return repository.exportBackup();
   };
@@ -171,6 +192,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         batches,
         statements,
         emiPlans,
+        categoryRules,
         planningConfig,
         planningSummary,
         summary,
@@ -184,6 +206,8 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         undoImportBatch,
         addEmiPlan,
         updatePlanningConfig,
+        addCategoryRule,
+        deleteCategoryRule,
         exportBackup,
         restoreBackup,
         resetToDemo,

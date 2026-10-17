@@ -6,11 +6,36 @@ import {
   CardStatement,
   EmiPlan,
   CashPlanningConfig,
+  CategoryRule,
 } from '../domain/types';
 import { calculatePeriodSummary } from '../domain/ledger';
 import { DEMO_FIXTURE, DEMO_STATEMENTS, DEMO_EMIS, DEMO_PLANNING_CONFIG } from './demoFixture';
 import { LedgerRepository } from './repository';
 import { createBackup, validateAndParseBackup } from '../domain/backup';
+
+const DEMO_RULES: CategoryRule[] = [
+  {
+    id: 'rule_demo_1',
+    recipient_pattern: 'Swiggy',
+    category: 'Food & Dining',
+    created_at: '2026-10-01T00:00:00.000Z',
+    match_count: 5
+  },
+  {
+    id: 'rule_demo_2',
+    recipient_pattern: 'Uber',
+    category: 'Transportation',
+    created_at: '2026-10-01T00:00:00.000Z',
+    match_count: 3
+  },
+  {
+    id: 'rule_demo_3',
+    recipient_pattern: 'Netflix',
+    category: 'Entertainment',
+    created_at: '2026-10-01T00:00:00.000Z',
+    match_count: 1
+  }
+];
 
 const STORAGE_KEY_ACCOUNTS = 'pft_accounts_v1';
 const STORAGE_KEY_EVENTS = 'pft_events_v1';
@@ -18,6 +43,7 @@ const STORAGE_KEY_BATCHES = 'pft_batches_v1';
 const STORAGE_KEY_STATEMENTS = 'pft_statements_v1';
 const STORAGE_KEY_EMIS = 'pft_emis_v1';
 const STORAGE_KEY_PLANNING = 'pft_planning_v1';
+const STORAGE_KEY_RULES = 'pft_rules_v1';
 
 export class LocalLedgerRepository implements LedgerRepository {
   private accounts: Account[];
@@ -26,6 +52,7 @@ export class LocalLedgerRepository implements LedgerRepository {
   private statements: CardStatement[];
   private emiPlans: EmiPlan[];
   private planningConfig: CashPlanningConfig;
+  private rules: CategoryRule[];
 
   constructor() {
     this.accounts = this.loadAccounts();
@@ -34,6 +61,7 @@ export class LocalLedgerRepository implements LedgerRepository {
     this.statements = this.loadStatements();
     this.emiPlans = this.loadEmiPlans();
     this.planningConfig = this.loadPlanningConfig();
+    this.rules = this.loadRules();
   }
 
   private loadAccounts(): Account[] {
@@ -108,6 +136,18 @@ export class LocalLedgerRepository implements LedgerRepository {
     return { ...DEMO_PLANNING_CONFIG };
   }
 
+  private loadRules(): CategoryRule[] {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const raw = window.localStorage.getItem(STORAGE_KEY_RULES);
+        if (raw) return JSON.parse(raw);
+      }
+    } catch {
+      // Fallback
+    }
+    return [...DEMO_RULES];
+  }
+
   private persist() {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
@@ -117,6 +157,7 @@ export class LocalLedgerRepository implements LedgerRepository {
         window.localStorage.setItem(STORAGE_KEY_STATEMENTS, JSON.stringify(this.statements));
         window.localStorage.setItem(STORAGE_KEY_EMIS, JSON.stringify(this.emiPlans));
         window.localStorage.setItem(STORAGE_KEY_PLANNING, JSON.stringify(this.planningConfig));
+        window.localStorage.setItem(STORAGE_KEY_RULES, JSON.stringify(this.rules));
       }
     } catch {
       // Ignore quota errors in private browsing
@@ -254,6 +295,35 @@ export class LocalLedgerRepository implements LedgerRepository {
     return { ...this.planningConfig };
   }
 
+  // Category Rules (M5)
+  async getCategoryRules(): Promise<CategoryRule[]> {
+    return [...this.rules];
+  }
+
+  async addCategoryRule(ruleData: Omit<CategoryRule, 'id' | 'created_at' | 'match_count'>): Promise<CategoryRule> {
+    const newRule: CategoryRule = {
+      id: `rule_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      recipient_pattern: ruleData.recipient_pattern.trim(),
+      category: ruleData.category.trim(),
+      account_id: ruleData.account_id || undefined,
+      created_at: new Date().toISOString(),
+      match_count: 0
+    };
+    this.rules.unshift(newRule);
+    this.persist();
+    return newRule;
+  }
+
+  async deleteCategoryRule(id: string): Promise<boolean> {
+    const initialLen = this.rules.length;
+    this.rules = this.rules.filter(r => r.id !== id);
+    if (this.rules.length !== initialLen) {
+      this.persist();
+      return true;
+    }
+    return false;
+  }
+
   // Backup & Restore (M3)
   async exportBackup(): Promise<string> {
     const payload = createBackup({
@@ -300,6 +370,7 @@ export class LocalLedgerRepository implements LedgerRepository {
     this.statements = JSON.parse(JSON.stringify(DEMO_STATEMENTS));
     this.emiPlans = JSON.parse(JSON.stringify(DEMO_EMIS));
     this.planningConfig = { ...DEMO_PLANNING_CONFIG };
+    this.rules = JSON.parse(JSON.stringify(DEMO_RULES));
     this.persist();
   }
 }

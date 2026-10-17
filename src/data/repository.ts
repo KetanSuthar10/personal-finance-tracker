@@ -6,6 +6,7 @@ import {
   CardStatement,
   EmiPlan,
   CashPlanningConfig,
+  CategoryRule,
 } from '../domain/types';
 
 export interface LedgerRepository {
@@ -27,6 +28,11 @@ export interface LedgerRepository {
   addEmiPlan(emi: Omit<EmiPlan, 'id'>): Promise<EmiPlan>;
   getPlanningConfig(): Promise<CashPlanningConfig>;
   updatePlanningConfig(config: Partial<CashPlanningConfig>): Promise<CashPlanningConfig>;
+
+  // Category Rules (M5)
+  getCategoryRules(): Promise<CategoryRule[]>;
+  addCategoryRule(rule: Omit<CategoryRule, 'id' | 'created_at' | 'match_count'>): Promise<CategoryRule>;
+  deleteCategoryRule(id: string): Promise<boolean>;
 
   // Backup & Restore (M3)
   exportBackup(): Promise<string>;
