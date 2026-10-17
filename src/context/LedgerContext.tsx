@@ -1,12 +1,26 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { Account, FinancialEvent, PeriodSummary, ImportBatch } from '../domain/types';
+import {
+  Account,
+  FinancialEvent,
+  PeriodSummary,
+  ImportBatch,
+  CardStatement,
+  EmiPlan,
+  CashPlanningConfig,
+  CashPlanningSummary,
+} from '../domain/types';
 import { LocalLedgerRepository } from '../data/localRepository';
 import { DEMO_FIXTURE } from '../data/demoFixture';
+import { calculateCashPlanning } from '../domain/cards';
 
 interface LedgerContextType {
   accounts: Account[];
   events: FinancialEvent[];
   batches: ImportBatch[];
+  statements: CardStatement[];
+  emiPlans: EmiPlan[];
+  planningConfig: CashPlanningConfig;
+  planningSummary: CashPlanningSummary | null;
   summary: PeriodSummary | null;
   period: { from: string; through: string };
   setPeriod: (period: { from: string; through: string }) => void;
@@ -16,6 +30,8 @@ interface LedgerContextType {
   deleteEvent: (id: string) => Promise<boolean>;
   commitImportBatch: (batch: ImportBatch, newEvents: FinancialEvent[], updatedEvents: FinancialEvent[]) => Promise<void>;
   undoImportBatch: (batchId: string) => Promise<boolean>;
+  addEmiPlan: (emi: Omit<EmiPlan, 'id'>) => Promise<EmiPlan>;
+  updatePlanningConfig: (config: Partial<CashPlanningConfig>) => Promise<void>;
   resetToDemo: () => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -27,6 +43,12 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [events, setEvents] = useState<FinancialEvent[]>([]);
   const [batches, setBatches] = useState<ImportBatch[]>([]);
+  const [statements, setStatements] = useState<CardStatement[]>([]);
+  const [emiPlans, setEmiPlans] = useState<EmiPlan[]>([]);
+  const [planningConfig, setPlanningConfig] = useState<CashPlanningConfig>({
+    horizon_days: 30,
+    emergency_buffer_paise: 200000,
+  });
   const [summary, setSummary] = useState<PeriodSummary | null>(null);
   const [period, setPeriod] = useState<{ from: string; through: string }>({
     from: DEMO_FIXTURE.period.from,
@@ -36,16 +58,22 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const loadData = useCallback(async () => {
     try {
-      const [accs, evts, sum, bts] = await Promise.all([
+      const [accs, evts, sum, bts, stmts, emis, planCfg] = await Promise.all([
         repository.getAccounts(),
         repository.getEvents(),
         repository.getSummary(period.from, period.through),
         repository.getImportBatches(),
+        repository.getCardStatements(),
+        repository.getEmiPlans(),
+        repository.getPlanningConfig(),
       ]);
       setAccounts(accs);
       setEvents(evts);
       setSummary(sum);
       setBatches(bts);
+      setStatements(stmts);
+      setEmiPlans(emis);
+      setPlanningConfig(planCfg);
     } finally {
       setIsLoading(false);
     }
@@ -54,6 +82,18 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  const planningSummary = useMemo(() => {
+    if (!summary) return null;
+    return calculateCashPlanning(
+      summary.liquid_funds_paise,
+      statements,
+      emiPlans,
+      events,
+      planningConfig,
+      period.through
+    );
+  }, [summary, statements, emiPlans, events, planningConfig, period.through]);
 
   const addEvent = async (eventData: Omit<FinancialEvent, 'id'>) => {
     const created = await repository.addEvent(eventData);
@@ -90,6 +130,17 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return success;
   };
 
+  const addEmiPlan = async (emi: Omit<EmiPlan, 'id'>) => {
+    const created = await repository.addEmiPlan(emi);
+    await loadData();
+    return created;
+  };
+
+  const updatePlanningConfig = async (config: Partial<CashPlanningConfig>) => {
+    await repository.updatePlanningConfig(config);
+    await loadData();
+  };
+
   const resetToDemo = async () => {
     setIsLoading(true);
     await repository.resetToDemo();
@@ -106,6 +157,10 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         accounts,
         events,
         batches,
+        statements,
+        emiPlans,
+        planningConfig,
+        planningSummary,
         summary,
         period,
         setPeriod,
@@ -115,6 +170,8 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         deleteEvent,
         commitImportBatch,
         undoImportBatch,
+        addEmiPlan,
+        updatePlanningConfig,
         resetToDemo,
         refresh: loadData,
       }}

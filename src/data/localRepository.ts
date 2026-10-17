@@ -1,30 +1,45 @@
-import { Account, FinancialEvent, PeriodSummary, ImportBatch } from '../domain/types';
+import {
+  Account,
+  FinancialEvent,
+  PeriodSummary,
+  ImportBatch,
+  CardStatement,
+  EmiPlan,
+  CashPlanningConfig,
+} from '../domain/types';
 import { calculatePeriodSummary } from '../domain/ledger';
-import { DEMO_FIXTURE } from './demoFixture';
+import { DEMO_FIXTURE, DEMO_STATEMENTS, DEMO_EMIS, DEMO_PLANNING_CONFIG } from './demoFixture';
 import { LedgerRepository } from './repository';
 
 const STORAGE_KEY_ACCOUNTS = 'pft_accounts_v1';
 const STORAGE_KEY_EVENTS = 'pft_events_v1';
 const STORAGE_KEY_BATCHES = 'pft_batches_v1';
+const STORAGE_KEY_STATEMENTS = 'pft_statements_v1';
+const STORAGE_KEY_EMIS = 'pft_emis_v1';
+const STORAGE_KEY_PLANNING = 'pft_planning_v1';
 
 export class LocalLedgerRepository implements LedgerRepository {
   private accounts: Account[];
   private events: FinancialEvent[];
   private batches: ImportBatch[];
+  private statements: CardStatement[];
+  private emiPlans: EmiPlan[];
+  private planningConfig: CashPlanningConfig;
 
   constructor() {
     this.accounts = this.loadAccounts();
     this.events = this.loadEvents();
     this.batches = this.loadBatches();
+    this.statements = this.loadStatements();
+    this.emiPlans = this.loadEmiPlans();
+    this.planningConfig = this.loadPlanningConfig();
   }
 
   private loadAccounts(): Account[] {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
         const raw = window.localStorage.getItem(STORAGE_KEY_ACCOUNTS);
-        if (raw) {
-          return JSON.parse(raw);
-        }
+        if (raw) return JSON.parse(raw);
       }
     } catch {
       // Fallback
@@ -36,9 +51,7 @@ export class LocalLedgerRepository implements LedgerRepository {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
         const raw = window.localStorage.getItem(STORAGE_KEY_EVENTS);
-        if (raw) {
-          return JSON.parse(raw);
-        }
+        if (raw) return JSON.parse(raw);
       }
     } catch {
       // Fallback
@@ -50,14 +63,48 @@ export class LocalLedgerRepository implements LedgerRepository {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
         const raw = window.localStorage.getItem(STORAGE_KEY_BATCHES);
-        if (raw) {
-          return JSON.parse(raw);
-        }
+        if (raw) return JSON.parse(raw);
       }
     } catch {
       // Fallback
     }
     return [];
+  }
+
+  private loadStatements(): CardStatement[] {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const raw = window.localStorage.getItem(STORAGE_KEY_STATEMENTS);
+        if (raw) return JSON.parse(raw);
+      }
+    } catch {
+      // Fallback
+    }
+    return [...DEMO_STATEMENTS];
+  }
+
+  private loadEmiPlans(): EmiPlan[] {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const raw = window.localStorage.getItem(STORAGE_KEY_EMIS);
+        if (raw) return JSON.parse(raw);
+      }
+    } catch {
+      // Fallback
+    }
+    return [...DEMO_EMIS];
+  }
+
+  private loadPlanningConfig(): CashPlanningConfig {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const raw = window.localStorage.getItem(STORAGE_KEY_PLANNING);
+        if (raw) return JSON.parse(raw);
+      }
+    } catch {
+      // Fallback
+    }
+    return { ...DEMO_PLANNING_CONFIG };
   }
 
   private persist() {
@@ -66,6 +113,9 @@ export class LocalLedgerRepository implements LedgerRepository {
         window.localStorage.setItem(STORAGE_KEY_ACCOUNTS, JSON.stringify(this.accounts));
         window.localStorage.setItem(STORAGE_KEY_EVENTS, JSON.stringify(this.events));
         window.localStorage.setItem(STORAGE_KEY_BATCHES, JSON.stringify(this.batches));
+        window.localStorage.setItem(STORAGE_KEY_STATEMENTS, JSON.stringify(this.statements));
+        window.localStorage.setItem(STORAGE_KEY_EMIS, JSON.stringify(this.emiPlans));
+        window.localStorage.setItem(STORAGE_KEY_PLANNING, JSON.stringify(this.planningConfig));
       }
     } catch {
       // Ignore quota errors in private browsing
@@ -84,7 +134,6 @@ export class LocalLedgerRepository implements LedgerRepository {
     if (options?.throughDate) {
       result = result.filter(e => e.date <= options.throughDate!);
     }
-    // Sort descending by date, then id
     return result.sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
   }
 
@@ -134,17 +183,13 @@ export class LocalLedgerRepository implements LedgerRepository {
     newEvents: FinancialEvent[],
     updatedEvents: FinancialEvent[]
   ): Promise<void> {
-    // Add new events
     this.events.push(...newEvents);
-
-    // Update merged events
     for (const updated of updatedEvents) {
       const idx = this.events.findIndex(e => e.id === updated.id);
       if (idx !== -1) {
         this.events[idx] = updated;
       }
     }
-
     this.batches.push(batch);
     this.persist();
   }
@@ -155,11 +200,9 @@ export class LocalLedgerRepository implements LedgerRepository {
       return false;
     }
 
-    // 1. Remove events created by this batch
     const createdSet = new Set(batch.created_event_ids);
     this.events = this.events.filter(e => !createdSet.has(e.id));
 
-    // 2. Detach observations from merged events
     for (const mergedId of batch.merged_event_ids) {
       const idx = this.events.findIndex(e => e.id === mergedId);
       if (idx !== -1) {
@@ -175,10 +218,48 @@ export class LocalLedgerRepository implements LedgerRepository {
     return true;
   }
 
+  // M4: Statements & EMIs
+  async getCardStatements(): Promise<CardStatement[]> {
+    return [...this.statements].sort((a, b) => b.statement_date.localeCompare(a.statement_date));
+  }
+
+  async addCardStatement(stmt: Omit<CardStatement, 'id'>): Promise<CardStatement> {
+    const id = `stmt-${Date.now()}`;
+    const newStmt: CardStatement = { ...stmt, id };
+    this.statements.push(newStmt);
+    this.persist();
+    return newStmt;
+  }
+
+  async getEmiPlans(): Promise<EmiPlan[]> {
+    return [...this.emiPlans];
+  }
+
+  async addEmiPlan(emi: Omit<EmiPlan, 'id'>): Promise<EmiPlan> {
+    const id = `emi-${Date.now()}`;
+    const newEmi: EmiPlan = { ...emi, id };
+    this.emiPlans.push(newEmi);
+    this.persist();
+    return newEmi;
+  }
+
+  async getPlanningConfig(): Promise<CashPlanningConfig> {
+    return { ...this.planningConfig };
+  }
+
+  async updatePlanningConfig(config: Partial<CashPlanningConfig>): Promise<CashPlanningConfig> {
+    this.planningConfig = { ...this.planningConfig, ...config };
+    this.persist();
+    return { ...this.planningConfig };
+  }
+
   async resetToDemo(): Promise<void> {
     this.accounts = JSON.parse(JSON.stringify(DEMO_FIXTURE.accounts));
     this.events = JSON.parse(JSON.stringify(DEMO_FIXTURE.events));
     this.batches = [];
+    this.statements = JSON.parse(JSON.stringify(DEMO_STATEMENTS));
+    this.emiPlans = JSON.parse(JSON.stringify(DEMO_EMIS));
+    this.planningConfig = { ...DEMO_PLANNING_CONFIG };
     this.persist();
   }
 }

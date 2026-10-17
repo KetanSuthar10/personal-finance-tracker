@@ -4,23 +4,23 @@ Updated: 18 October 2026, Asia/Kolkata
 
 ## Current state
 
-Milestone M2 (Statement Import and Daily Reconciliation) is complete and verified. A complete statement ingestion workflow is implemented supporting CSV statements for bank and credit card accounts. The system performs client-side CSV parsing, normalisation, candidate matching against manual daily entries, deduplication to prevent duplicate expense inflation, and reversible batch rollback. All 22 automated tests pass cleanly, and the production build compiles with zero errors.
+Milestone M4 (Cards, EMI Lifecycle, and Cash Planning) is complete and verified. The application tracks credit card statement cycles, partial repayment allocations, unbilled post-statement transactions, and EMI conversion schedules. The cash planning horizon provides a transparent safe-to-spend figure that strictly deduplicates EMI instalments already included in card statement bills. All 27 automated tests pass cleanly across 6 test suites, and the production build compiles with zero errors.
 
 | Milestone | Status |
 | --- | --- |
 | Starter pack | Complete (documentation starter and fixtures) |
 | M0 review / M1 task plan | Complete (`docs/M1_TASK_PLAN.md` created) |
 | M1 synthetic prototype | Complete and verified locally (`npm test`, `npm run build`, `npm run dev`) |
-| M2 imports & reconciliation | Complete and verified (`docs/M2_TASK_PLAN.md`, synthetic CSV fixtures, unit tests) |
-| M3 connected storage/auth | Next milestone candidate (Supabase + Google OAuth) |
-| M4 cards/EMIs | Next milestone candidate (Card statements, repayments, EMI plans) |
+| M2 imports & reconciliation | Complete and verified (`docs/M2_TASK_PLAN.md`, CSV fixtures, unit tests) |
+| M3 connected storage/auth | Next milestone (Supabase PostgreSQL, RLS policies, Google OAuth, export/restore) |
+| M4 cards/EMIs & planning | Complete and verified (`docs/M4_TASK_PLAN.md`, card statements, EMIs, planning horizon) |
 | M5 Gemini integration | Not started; account/data route unresolved |
 | M6 capture/release | Not started |
 | M7 optional n8n | Not selected |
 
 ## Immediate next action
 
-Review the running application at `http://127.0.0.1:5173/` under the "Statements & Imports" tab. Await user instruction to proceed to either Milestone M3 (Connected storage/auth) or Milestone M4 (Cards & EMI lifecycle).
+Review the running application at `http://127.0.0.1:5173/` under the "Cards & EMIs" tab. Await user instruction to proceed to Milestone M3 (Connected storage/auth with Supabase and Google OAuth) or Milestone M5 (Gemini Assistant integration).
 
 ## True blockers
 
@@ -31,16 +31,18 @@ None for local development. For future milestones:
 ## Latest validation evidence
 
 1. **Automated Unit Tests (`npm test`)**:
-   - `src/tests/reconciliation.test.ts`: 4/4 tests passed. Verified matching against manual entries, prevention of duplicate expense inflation on repeated file imports (`DUPLICATE_IMPORT`), and reversible batch rollback without deleting manual entries.
-   - `src/tests/importer.test.ts`: 3/3 tests passed. Verified RFC-compliant CSV parsing with quoted commas, date format normalisation, and column extraction.
+   - `src/tests/cards.test.ts`: 5/5 tests passed. Verified partial repayment allocation to card bills, unbilled post-statement activity calculations, amortized EMI formula, and strict deduplication in cash planning (preventing double-deduction of statement-billed EMIs).
+   - `src/tests/reconciliation.test.ts`: 4/4 tests passed. Verified manual matching, zero inflation on duplicate imports, and reversible batch rollback.
+   - `src/tests/importer.test.ts`: 3/3 tests passed. Verified RFC-compliant CSV parsing and date normalisation.
    - `src/tests/ledger.test.ts`: 6/6 tests passed. Invariant proof and demo fixture reconciliation.
    - `src/tests/money.test.ts`: 6/6 tests passed. String-to-paise conversion and INR formatting.
    - `src/tests/repository.test.ts`: 3/3 tests passed. Local storage and demo reset.
-   - Total test suite: 22/22 passed across 5 test suites.
+   - Total test suite: 27/27 passed across 6 test suites.
 2. **TypeScript & Production Build (`npm run build`)**:
    - Passed strictly with code 0 (`tsc && vite build`).
 3. **Local Development Server**:
    - Active on `http://127.0.0.1:5173/`. Verified via HTTP response.
+
 
 
 

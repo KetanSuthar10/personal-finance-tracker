@@ -7,7 +7,7 @@ import { AccountsPage } from './features/accounts/AccountsPage';
 import { TransactionsPage } from './features/transactions/TransactionsPage';
 import { AddEntryModal } from './features/entry/AddEntryModal';
 import { ImportsPage } from './features/imports/ImportsPage';
-import { CommitmentsPlaceholder } from './features/placeholders/CommitmentsPlaceholder';
+import { CommitmentsPage } from './features/commitments/CommitmentsPage';
 import { AssistantPlaceholder } from './features/placeholders/AssistantPlaceholder';
 import { SettingsPlaceholder } from './features/placeholders/SettingsPlaceholder';
 import { FinancialEvent } from './domain/types';
@@ -49,7 +49,7 @@ export const AppContent: React.FC = () => {
       )}
 
       {currentTab === 'imports' && <ImportsPage />}
-      {currentTab === 'commitments' && <CommitmentsPlaceholder />}
+      {currentTab === 'commitments' && <CommitmentsPage />}
       {currentTab === 'assistant' && <AssistantPlaceholder />}
       {currentTab === 'settings' && <SettingsPlaceholder />}
 

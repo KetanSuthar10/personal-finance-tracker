@@ -1,4 +1,54 @@
-import { DemoFixture } from '../domain/types';
+import { DemoFixture, CardStatement, EmiPlan, CashPlanningConfig } from '../domain/types';
+
+export const DEMO_STATEMENTS: CardStatement[] = [
+  {
+    id: 'stmt-2026-09',
+    account_id: 'demo-card',
+    statement_date: '2026-09-30',
+    due_date: '2026-10-20',
+    statement_total_paise: 80000, // ₹800.00 total bill
+    minimum_due_paise: 5000,    // ₹50.00 minimum due
+    allocated_payments_paise: 30000, // ₹300.00 repayment made on 07/10
+    is_settled: false, // ₹500.00 remaining due
+  },
+];
+
+export const DEMO_EMIS: EmiPlan[] = [
+  {
+    id: 'emi-laptop',
+    merchant: 'Sample Electronics - Work Laptop',
+    account_id: 'demo-card',
+    original_principal_paise: 3000000, // ₹30,000.00
+    monthly_instalment_paise: 525000,  // ₹5,250.00
+    total_tenure_months: 6,
+    instalments_billed: 2,
+    remaining_principal_paise: 2000000, // ₹20,000.00
+    annual_interest_rate_pct: 14.0,
+    start_date: '2026-08-15',
+    next_due_date: '2026-10-20',
+    billed_in_statement_id: 'stmt-2026-09', // DEDUPLICATED against statement bill!
+    status: 'active',
+  },
+  {
+    id: 'emi-phone',
+    merchant: 'Mobile Store - Smartphone',
+    account_id: 'demo-card',
+    original_principal_paise: 1500000, // ₹15,000.00
+    monthly_instalment_paise: 260000,  // ₹2,600.00
+    total_tenure_months: 6,
+    instalments_billed: 0,
+    remaining_principal_paise: 1500000,
+    annual_interest_rate_pct: 12.0,
+    start_date: '2026-10-10',
+    next_due_date: '2026-11-10', // Standalone, due in November
+    status: 'active',
+  },
+];
+
+export const DEMO_PLANNING_CONFIG: CashPlanningConfig = {
+  horizon_days: 30,
+  emergency_buffer_paise: 200000, // ₹2,000.00 reserve
+};
 
 export const DEMO_FIXTURE: DemoFixture = {
   fixture_version: 1,

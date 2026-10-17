@@ -1,4 +1,12 @@
-import { Account, FinancialEvent, PeriodSummary, ImportBatch } from '../domain/types';
+import {
+  Account,
+  FinancialEvent,
+  PeriodSummary,
+  ImportBatch,
+  CardStatement,
+  EmiPlan,
+  CashPlanningConfig,
+} from '../domain/types';
 
 export interface LedgerRepository {
   getAccounts(): Promise<Account[]>;
@@ -11,5 +19,14 @@ export interface LedgerRepository {
   getImportBatches(): Promise<ImportBatch[]>;
   commitImportBatch(batch: ImportBatch, newEvents: FinancialEvent[], updatedEvents: FinancialEvent[]): Promise<void>;
   undoImportBatch(batchId: string): Promise<boolean>;
+
+  // Card Statements & EMIs (M4)
+  getCardStatements(): Promise<CardStatement[]>;
+  addCardStatement(stmt: Omit<CardStatement, 'id'>): Promise<CardStatement>;
+  getEmiPlans(): Promise<EmiPlan[]>;
+  addEmiPlan(emi: Omit<EmiPlan, 'id'>): Promise<EmiPlan>;
+  getPlanningConfig(): Promise<CashPlanningConfig>;
+  updatePlanningConfig(config: Partial<CashPlanningConfig>): Promise<CashPlanningConfig>;
+
   resetToDemo(): Promise<void>;
 }

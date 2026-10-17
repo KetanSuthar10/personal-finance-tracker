@@ -65,6 +65,50 @@ export interface ImportRowCandidate {
   confidence_reason?: string;
 }
 
+export interface CardStatement {
+  id: string;
+  account_id: string;
+  statement_date: string;
+  due_date: string;
+  statement_total_paise: number;
+  minimum_due_paise: number;
+  allocated_payments_paise: number;
+  is_settled: boolean;
+}
+
+export interface EmiPlan {
+  id: string;
+  purchase_event_id?: string;
+  account_id: string;
+  merchant: string;
+  original_principal_paise: number;
+  monthly_instalment_paise: number;
+  total_tenure_months: number;
+  instalments_billed: number;
+  remaining_principal_paise: number;
+  annual_interest_rate_pct: number;
+  start_date: string;
+  next_due_date: string;
+  billed_in_statement_id?: string; // Links to statement bill for deduplication!
+  status: 'active' | 'completed' | 'foreclosed';
+}
+
+export interface CashPlanningConfig {
+  horizon_days: number;
+  emergency_buffer_paise: number;
+}
+
+export interface CashPlanningSummary {
+  liquid_funds_paise: number;
+  card_bills_due_paise: number;
+  standalone_emis_due_paise: number;
+  deduplicated_emis_count: number;
+  total_upcoming_obligations_paise: number;
+  emergency_buffer_paise: number;
+  planning_available_paise: number;
+}
+
+
 
 export interface Account {
   id: string;
