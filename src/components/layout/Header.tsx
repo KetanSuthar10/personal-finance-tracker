@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Plus, RotateCcw, ShieldCheck, Calendar, Camera, ChevronDown } from 'lucide-react';
+import { Plus, RotateCcw, ShieldCheck, Calendar, Camera, ChevronDown, LogOut } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { useLedger } from '../../context/LedgerContext';
+import { useAuth } from '../../context/AuthContext';
 import { PeriodSelectModal } from '../common/PeriodSelectModal';
 
 export interface HeaderProps {
@@ -12,6 +13,7 @@ export interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onOpenAddEntry, onOpenCapture }) => {
   const { period, setPeriod, resetToDemo, isLoading } = useLedger();
+  const { user, signOut } = useAuth();
   const [isPeriodModalOpen, setIsPeriodModalOpen] = useState(false);
 
   return (
@@ -26,10 +28,17 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAddEntry, onOpenCapture })
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-sm font-bold text-slate-900 sm:text-base">Finance Tracker</h1>
-                <Badge variant="indigo" size="sm" className="hidden sm:inline-flex">
-                  <ShieldCheck className="w-3 h-3 text-indigo-500" />
-                  Demo Mode
-                </Badge>
+                {user ? (
+                  <Badge variant="indigo" size="sm" className="hidden sm:inline-flex" title={`Logged in as ${user.email}`}>
+                    <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                    <span>Owner</span>
+                  </Badge>
+                ) : (
+                  <Badge variant="neutral" size="sm" className="hidden sm:inline-flex">
+                    <ShieldCheck className="w-3 h-3 text-slate-400" />
+                    <span>Demo Mode</span>
+                  </Badge>
+                )}
               </div>
               <button
                 type="button"
@@ -80,6 +89,19 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAddEntry, onOpenCapture })
             <Plus className="w-4 h-4" />
             <span>Add Entry</span>
           </Button>
+
+          {user && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => signOut()}
+              title="Sign out of your session"
+              className="text-xs text-slate-500 hover:text-rose-600 hover:border-rose-200"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden xl:inline">Sign Out</span>
+            </Button>
+          )}
         </div>
       </header>
 

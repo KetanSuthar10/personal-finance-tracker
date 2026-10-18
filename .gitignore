@@ -6,6 +6,7 @@ coverage/
 .vite/
 playwright-report/
 test-results/
+supabase/.temp/
 
 # Credentials and local configuration
 .env

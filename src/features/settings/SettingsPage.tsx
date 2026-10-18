@@ -16,7 +16,10 @@ import {
   AlertCircle,
   FileCode,
   KeyRound,
+  LogOut,
+  UserCheck,
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 export const SettingsPage: React.FC = () => {
   const {
@@ -29,6 +32,8 @@ export const SettingsPage: React.FC = () => {
     resetToDemo,
     isLoading,
   } = useLedger();
+
+  const { user, ownerStatus, signOut, isConfigured } = useAuth();
 
   const [restoreModalOpen, setRestoreModalOpen] = useState(false);
   const [restoreFileContent, setRestoreFileContent] = useState<string | null>(null);
@@ -212,15 +217,80 @@ export const SettingsPage: React.FC = () => {
         </CardHeader>
 
         <CardContent className="space-y-4 text-xs text-slate-600">
-          {/* Current Mode Badge */}
+          {/* Active Supabase Connection Card */}
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-slate-900 text-sm">Supabase Cloud Database & Auth</span>
+                  <Badge variant={isConfigured ? 'indigo' : 'neutral'} size="sm">
+                    {isConfigured ? 'Connected' : 'Unconfigured'}
+                  </Badge>
+                  {user && (
+                    <Badge variant="indigo" size="sm" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                      <UserCheck className="w-3 h-3 text-emerald-600 mr-1" />
+                      Session Active
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Database URL:{' '}
+                  <code className="bg-slate-200/80 px-1 py-0.5 rounded text-[11px] font-mono text-slate-800">
+                    {import.meta.env.VITE_SUPABASE_URL || 'Not configured'}
+                  </code>
+                </p>
+              </div>
+
+              {user && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => signOut()}
+                  className="text-rose-600 hover:bg-rose-50 border-rose-200 self-start sm:self-auto"
+                >
+                  <LogOut className="w-3.5 h-3.5 mr-1" />
+                  Sign Out
+                </Button>
+              )}
+            </div>
+
+            {user && (
+              <div className="pt-2 border-t border-slate-200/60 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                <div className="bg-white p-2.5 rounded-lg border border-slate-200/70">
+                  <span className="text-slate-400 block font-medium">Authenticated Account</span>
+                  <span className="font-semibold text-slate-800">{user.email}</span>
+                </div>
+                <div className="bg-white p-2.5 rounded-lg border border-slate-200/70">
+                  <span className="text-slate-400 block font-medium">User UUID (Auth Authority)</span>
+                  <span className="font-mono text-slate-700 truncate block" title={user.id}>{user.id}</span>
+                </div>
+                <div className="bg-white p-2.5 rounded-lg border border-slate-200/70 sm:col-span-2 flex items-center justify-between">
+                  <div>
+                    <span className="text-slate-400 block font-medium">Owner Authorization State</span>
+                    <span className="font-medium text-slate-800">
+                      {ownerStatus?.ownerConfigured
+                        ? ownerStatus.isOwner
+                          ? 'Server-Verified Owner (Active)'
+                          : 'Unauthorized Sign-in'
+                        : 'Initial Setup Pending in Supabase'}
+                    </span>
+                  </div>
+                  <Badge variant={ownerStatus?.isOwner ? 'indigo' : 'neutral'} size="sm">
+                    {ownerStatus?.isOwner ? 'Authorized' : 'Pending'}
+                  </Badge>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Local Ledger Reset Action */}
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-slate-900 text-sm">Active Mode: Browser Local Storage</span>
-                <Badge variant="indigo" size="sm">Prototype Active</Badge>
+                <span className="font-semibold text-slate-900 text-sm">Local State & Fixture Reset</span>
               </div>
               <p className="text-[11px] text-slate-500 mt-0.5">
-                Financial records are safely isolated in your browser. All business logic uses strict integer paise arithmetic.
+                Financial records use strict integer paise arithmetic. Resetting reinstates the bundled demo fixture.
               </p>
             </div>
             <Button
