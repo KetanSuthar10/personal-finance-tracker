@@ -16,7 +16,7 @@ The single source of truth for task progress and verified operational evidence i
 | **T01 Canonical Writes and Calculations** | `VERIFIED` — AT01–AT03 passed, command service built, carried opening and period slicing verified | [reports/T01.md](production/reports/T01.md) |
 | **Test Suite Baseline** | 79 passing unit tests across 13 test suites; production build passing | `npm test` & `npm run build` |
 | **Diagnostic Audit Reproduction** | 7 issues resolved, 12 remaining for subsequent tasks | [domain-audit-results.json](production/evidence/domain-audit-results.json) |
-| **T02 Supabase Schema & Auth** | `IMPLEMENTED_UNVERIFIED` — Client configured, persistent session, protected routes & schema ready | [reports/T02.md](production/reports/T02.md) |
+| **T02 Supabase Schema & Auth** | `VERIFIED` — Client configured, persistent session, protected routes, and live hosted database verified | [reports/T02.md](production/reports/T02.md) |
 
 ## Active task
 

@@ -8,7 +8,7 @@ Reviewed baseline: `552a527` (branch `main`).
 | --- | --- | --- | --- |
 | T00 | VERIFIED | `d7c0a0e` / Windows 11 / Node v24.21.0 / npm 11.19.0 | [reports/T00.md](reports/T00.md) |
 | T01 | VERIFIED | `552a527` / Windows 11 / Node v24.21.0 / npm 11.19.0 | [reports/T01.md](reports/T01.md) |
-| T02 | IMPLEMENTED_UNVERIFIED | `792d613` / Windows 11 / Node v24.21.0 / npm 11.19.0 | [reports/T02.md](reports/T02.md) |
+| T02 | VERIFIED | `97eed8e` / Windows 11 / Node v24.21.0 / npm 11.19.0 / Hosted Supabase | [reports/T02.md](reports/T02.md) |
 | T03 | NOT_STARTED | — | — |
 | T04 | NOT_STARTED | — | — |
 | T05 | NOT_STARTED | — | — |
@@ -24,7 +24,7 @@ Allowed states: NOT_STARTED, IN_PROGRESS, IMPLEMENTED_UNVERIFIED, VERIFIED, BLOC
 
 ## External readiness
 
-- Supabase project, migrations, owner UUID and provider configuration: Client & migrations implemented (T02); hosted SQL run pending owner dashboard paste.
+- Supabase project, migrations, RLS, and transactional boundaries verified live against hosted database (T02); owner UUID enrollment pending owner first sign-in.
 - Google login and phone/laptop persistence: Auth flows & persistent session handling implemented (T02/T03).
 - Actual bank/card layouts: not supplied/verified for this sequence.
 - Gemini project/model/quota/data route and allowed spend: not verified; no new spend authorised (scheduled for T10).
@@ -32,4 +32,4 @@ Allowed states: NOT_STARTED, IN_PROGRESS, IMPLEMENTED_UNVERIFIED, VERIFIED, BLOC
 
 ## Next assigned task
 
-T03 (`docs/production/tasks/T03_AUTH_AND_SYNC.md`), awaiting user assignment after schema execution in Supabase.
+T03 (`docs/production/tasks/T03_AUTH_AND_SYNC.md`), awaiting user assignment.
