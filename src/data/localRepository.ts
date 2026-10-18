@@ -184,6 +184,14 @@ export class LocalLedgerRepository implements LedgerRepository {
   }
 
   async addEvent(eventData: Omit<FinancialEvent, 'id'>): Promise<FinancialEvent> {
+    if (!Number.isSafeInteger(eventData.income_paise) || !Number.isSafeInteger(eventData.spending_paise)) {
+      throw new Error('Income and spending paise must be finite safe integers.');
+    }
+    for (const p of eventData.postings) {
+      if (!Number.isSafeInteger(p.delta_paise)) {
+        throw new Error(`Posting delta_paise must be a finite safe integer: ${p.delta_paise}`);
+      }
+    }
     const id = `evt-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
     const newEvent: FinancialEvent = { ...eventData, id };
     this.events.push(newEvent);

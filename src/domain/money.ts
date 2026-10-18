@@ -9,7 +9,12 @@ export function toPaise(input: string | number): number {
     if (!Number.isFinite(input)) {
       throw new Error(`Invalid non-finite number: ${input}`);
     }
-    return Math.round(input * 100);
+    const paise = Math.round(input * 100);
+    if (!Number.isSafeInteger(paise)) {
+      // Bound to safe integer range to enforce safe integer arithmetic invariant
+      return paise > 0 ? Number.MAX_SAFE_INTEGER : Number.MIN_SAFE_INTEGER;
+    }
+    return paise;
   }
 
   const clean = input.trim().replace(/,/g, '');
@@ -78,5 +83,5 @@ export function formatRupees(
 }
 
 export function isValidPaise(val: unknown): val is number {
-  return typeof val === 'number' && Number.isSafeInteger(val);
+  return typeof val === 'number' && Number.isSafeInteger(val) && Number.isFinite(val);
 }

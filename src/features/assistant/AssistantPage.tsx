@@ -40,7 +40,7 @@ export const AssistantPage: React.FC = () => {
     statements,
     emiPlans,
     categoryRules,
-    addEvent,
+    executeCommand,
     addCategoryRule,
     deleteCategoryRule
   } = useLedger();
@@ -128,21 +128,14 @@ export const AssistantPage: React.FC = () => {
   // Action proposal confirmations
   const handleConfirmEntry = async (msgId: string, entryData: NonNullable<ActionProposal['payload']['entry']>) => {
     const account = accounts.find(a => a.id === entryData.account_id) || accounts[0];
-    const isSpending = entryData.type === 'purchase' || entryData.type === 'fee';
 
-    await addEvent({
+    await executeCommand({
       date: entryData.date,
       type: entryData.type as EventType,
+      amount_paise: entryData.amount_paise,
+      account_id: account.id,
       recipient: entryData.recipient,
       category: entryData.category || null,
-      income_paise: isSpending ? 0 : entryData.amount_paise,
-      spending_paise: isSpending ? entryData.amount_paise : 0,
-      postings: [
-        {
-          account_id: account.id,
-          delta_paise: isSpending ? -entryData.amount_paise : entryData.amount_paise
-        }
-      ],
       notes: entryData.notes ? `[AI Entry] ${entryData.notes}` : '[AI Entry]'
     });
 

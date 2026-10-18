@@ -2,12 +2,12 @@
 
 Prepared 18 October 2026. This file is a working evidence ledger, not an implementation claim.
 
-Reviewed baseline: `d7c0a0efa17cb47094d03fb8e2e585d05766ba05` (branch `main`).
+Reviewed baseline: `552a527` (branch `main`).
 
 | Task | Status | Tested commit / environment | Evidence/report |
 | --- | --- | --- | --- |
 | T00 | VERIFIED | `d7c0a0e` / Windows 11 / Node v24.21.0 / npm 11.19.0 | [reports/T00.md](reports/T00.md) |
-| T01 | NOT_STARTED | — | — |
+| T01 | VERIFIED | `552a527` / Windows 11 / Node v24.21.0 / npm 11.19.0 | [reports/T01.md](reports/T01.md) |
 | T02 | NOT_STARTED | — | — |
 | T03 | NOT_STARTED | — | — |
 | T04 | NOT_STARTED | — | — |
@@ -32,4 +32,4 @@ Allowed states: NOT_STARTED, IN_PROGRESS, IMPLEMENTED_UNVERIFIED, VERIFIED, BLOC
 
 ## Next assigned task
 
-T01 only (`docs/production/tasks/T01_CANONICAL_WRITES.md`), awaiting user assignment.
+T02 only (`docs/production/tasks/T02_DATABASE.md`), awaiting user assignment.

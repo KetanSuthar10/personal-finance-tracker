@@ -49,7 +49,13 @@ function handleLocalEngineQuery(
     q.includes('add expense')
   ) {
     const amtRupees = extractAmountRupees(q);
-    const amtPaise = amtRupees ? toPaise(amtRupees) : 12000; // default Rs 120 if unstated
+    if (!amtRupees || amtRupees <= 0) {
+      return {
+        reply: "Could you please specify the amount for this transaction? For example: 'Record ₹180 at Blue Tokai from HDFC'.",
+        toolCalls: []
+      };
+    }
+    const amtPaise = toPaise(amtRupees);
 
     // Extract recipient
     let recipient = 'Cafe';
@@ -222,12 +228,31 @@ function handleLocalEngineQuery(
     q.includes('month') ||
     q.includes('overview')
   ) {
-    const result = executeAssistantTool('get_period_summary', { start_date: '2026-10-01', end_date: '2026-10-31' }, context);
+    let startDate = '2026-10-01';
+    let endDate = '2026-10-31';
+    let monthLabel = 'October 2026';
+
+    const qLower = q.toLowerCase();
+    if (qLower.includes('november') || qLower.includes('nov')) {
+      startDate = '2026-11-01';
+      endDate = '2026-11-30';
+      monthLabel = 'November 2026';
+    } else if (qLower.includes('december') || qLower.includes('dec')) {
+      startDate = '2026-12-01';
+      endDate = '2026-12-31';
+      monthLabel = 'December 2026';
+    } else if (qLower.includes('september') || qLower.includes('sep')) {
+      startDate = '2026-09-01';
+      endDate = '2026-09-30';
+      monthLabel = 'September 2026';
+    }
+
+    const result = executeAssistantTool('get_period_summary', { start_date: startDate, end_date: endDate }, context);
     toolCalls.push(result.execution);
 
     const res = result.execution.result as any;
     return {
-      reply: `For October 2026, your received income was **${res.received_income_formatted}** and net verified spending was **${res.net_spending_formatted}**. Outstanding card balance is **${res.card_outstanding_formatted}**, leaving liquid asset funds of **${res.liquid_funds_formatted}**.`,
+      reply: `For ${monthLabel}, your received income was **${res.received_income_formatted}** and net verified spending was **${res.net_spending_formatted}**. Outstanding card balance is **${res.card_outstanding_formatted}**, leaving liquid asset funds of **${res.liquid_funds_formatted}**.`,
       toolCalls
     };
   }

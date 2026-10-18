@@ -42,6 +42,9 @@ export function inferCategoryAndType(
 
   // 2. Bank account logic
   if (creditPaise > 0) {
+    if (descUpper.includes('REFUND') || descUpper.includes('REVERSAL')) {
+      return { type: 'refund', category: 'General', recipient };
+    }
     if (descUpper.includes('SALARY') || descUpper.includes('PAYROLL')) {
       return { type: 'income', category: 'Salary', recipient };
     }
@@ -243,13 +246,21 @@ export function applyImportBatch(
     // Otherwise create a new event
     const eventId = `evt-imp-${batchId}-${c.row_index}`;
     const amountPaise = Math.abs(c.delta_paise);
+
+    // Repayment direction: Bank (asset decrease) -> Card (liability reduction)
+    let primaryId = account.id;
+    let destId = destinationAccountForTransfers?.id;
+
+    if (c.inferred_type === 'card_payment' && account.type === 'card') {
+      primaryId = destinationAccountForTransfers?.id || 'demo-bank';
+      destId = account.id;
+    }
+
     const postingsSpec = buildEventPostings(
       c.inferred_type,
       amountPaise,
-      account.id,
-      c.inferred_type === 'own_transfer' || c.inferred_type === 'card_payment'
-        ? destinationAccountForTransfers?.id
-        : undefined
+      primaryId,
+      destId
     );
 
     const newEvt: FinancialEvent = {

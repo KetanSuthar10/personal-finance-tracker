@@ -43,11 +43,27 @@ export function calculatePeriodSummary(
   fromDate: string,
   throughDate: string
 ): PeriodSummary {
-  // 1. Opening net position is sum of opening positions of all accounts
-  const opening_net_position_paise = accounts.reduce(
-    (sum, acc) => sum + acc.opening_position_paise,
-    0
-  );
+  // 1. Opening net position carries forward initial account opening balances
+  // and all transactions occurring strictly before fromDate.
+  const opening_positions_paise: Record<string, number> = {};
+  for (const account of accounts) {
+    opening_positions_paise[account.id] = account.opening_position_paise;
+  }
+
+  for (const event of events) {
+    if (event.date < fromDate) {
+      for (const posting of event.postings) {
+        if (opening_positions_paise[posting.account_id] !== undefined) {
+          opening_positions_paise[posting.account_id] += posting.delta_paise;
+        }
+      }
+    }
+  }
+
+  let opening_net_position_paise = 0;
+  for (const account of accounts) {
+    opening_net_position_paise += opening_positions_paise[account.id] ?? 0;
+  }
 
   // 2. Filter events for the period
   const periodEvents = events.filter(

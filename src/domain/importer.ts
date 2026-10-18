@@ -1,4 +1,5 @@
 import { toPaise } from './money';
+import { isValidCalendarDate } from './dates';
 
 export interface RawCsvRow {
   date: string; // Normalised to YYYY-MM-DD
@@ -72,29 +73,36 @@ export function parseCsvText(csvText: string): string[][] {
 
 /**
  * Normalises date strings into standard YYYY-MM-DD in Asia/Kolkata timezone.
- * Supports: DD/MM/YYYY, DD-MM-YYYY, YYYY-MM-DD, D/M/YYYY
+ * Supports: DD/MM/YYYY, DD-MM-YYYY, YYYY-MM-DD, D/M/YYYY.
+ * Rejects impossible calendar dates (e.g. 31/02/2026).
  */
 export function normalizeDate(dateStr: string): string {
   const clean = dateStr.trim();
   // DD/MM/YYYY or DD-MM-YYYY
   const dmyMatch = clean.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
   if (dmyMatch) {
-    const day = dmyMatch[1].padStart(2, '0');
-    const month = dmyMatch[2].padStart(2, '0');
-    const year = dmyMatch[3];
-    return `${year}-${month}-${day}`;
+    const day = parseInt(dmyMatch[1], 10);
+    const month = parseInt(dmyMatch[2], 10);
+    const year = parseInt(dmyMatch[3], 10);
+    if (!isValidCalendarDate(year, month, day)) {
+      return 'REJECT';
+    }
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   }
 
   // YYYY-MM-DD
   const ymdMatch = clean.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
   if (ymdMatch) {
-    const year = ymdMatch[1];
-    const month = ymdMatch[2].padStart(2, '0');
-    const day = ymdMatch[3].padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    const year = parseInt(ymdMatch[1], 10);
+    const month = parseInt(ymdMatch[2], 10);
+    const day = parseInt(ymdMatch[3], 10);
+    if (!isValidCalendarDate(year, month, day)) {
+      return 'REJECT';
+    }
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   }
 
-  throw new Error(`Unrecognised date format: "${dateStr}". Expected DD/MM/YYYY or YYYY-MM-DD.`);
+  return 'REJECT';
 }
 
 /**
@@ -168,9 +176,10 @@ export function extractStatementRows(
     const rawDesc = row[descIdx] || 'Unlabelled transaction';
     const refNo = refIdx !== -1 ? row[refIdx] : undefined;
 
-    if (!rawDate) continue;
-
     const date = normalizeDate(rawDate);
+    if (date === 'REJECT') {
+      throw new Error(`Row ${i}: Invalid calendar date "${rawDate}".`);
+    }
 
     let debitPaise = 0;
     let creditPaise = 0;

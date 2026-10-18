@@ -2,23 +2,23 @@
   {
     "id": "PERIOD_OPENING",
     "description": "Period opening should carry earlier postings",
-    "actual": 148000,
+    "actual": 630000,
     "expected": 630000,
-    "issue_reproduced": true
+    "issue_reproduced": false
   },
   {
     "id": "INVALID_DATE",
     "description": "Impossible date should be rejected",
-    "actual": "2026-02-31",
+    "actual": "REJECT",
     "expected": "REJECT",
-    "issue_reproduced": true
+    "issue_reproduced": false
   },
   {
     "id": "UNSAFE_NUMERIC_MONEY",
     "description": "Number input should enforce safe integer paise",
-    "actual": false,
+    "actual": true,
     "expected": true,
-    "issue_reproduced": true
+    "issue_reproduced": false
   },
   {
     "id": "FALSE_EXACT",
@@ -50,20 +50,20 @@
   {
     "id": "BANK_REFUND_AS_INCOME",
     "description": "Bank refund should not be additional income",
-    "actual": "income",
+    "actual": "refund",
     "expected": "refund",
-    "issue_reproduced": true
+    "issue_reproduced": false
   },
   {
     "id": "CARD_IMPORT_REVERSED",
     "description": "Imported card repayment should credit card and debit bank",
     "actual": [
       {
-        "account_id": "demo-card",
+        "account_id": "demo-bank",
         "delta_paise": -50000
       },
       {
-        "account_id": "demo-bank",
+        "account_id": "demo-card",
         "delta_paise": 50000
       }
     ],
@@ -77,7 +77,7 @@
         "delta_paise": 50000
       }
     ],
-    "issue_reproduced": true
+    "issue_reproduced": false
   },
   {
     "id": "SETTLED_EMI_REAPPEARS",
@@ -124,16 +124,16 @@
   {
     "id": "UNSPECIFIED_AMOUNT_INVENTED",
     "description": "Missing amount must request clarification",
-    "actual": 12000,
+    "actual": null,
     "expected": null,
-    "issue_reproduced": true
+    "issue_reproduced": false
   },
   {
     "id": "HARDCODED_ASSISTANT_PERIOD",
     "description": "November request should not return October",
-    "actual": "2026-10-01",
+    "actual": "2026-11-01",
     "expected": "2026-11-01",
-    "issue_reproduced": true
+    "issue_reproduced": false
   },
   {
     "id": "RAW_QUERY_UNMASKED",

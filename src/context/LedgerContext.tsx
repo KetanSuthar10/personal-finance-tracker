@@ -13,6 +13,7 @@ import {
 import { LocalLedgerRepository } from '../data/localRepository';
 import { DEMO_FIXTURE } from '../data/demoFixture';
 import { calculateCashPlanning } from '../domain/cards';
+import { CreateFinancialEntryCommand, validateFinancialCommand } from '../domain/commandService';
 
 interface LedgerContextType {
   accounts: Account[];
@@ -28,6 +29,7 @@ interface LedgerContextType {
   setPeriod: (period: { from: string; through: string }) => void;
   isLoading: boolean;
   addEvent: (eventData: Omit<FinancialEvent, 'id'>) => Promise<FinancialEvent>;
+  executeCommand: (cmd: CreateFinancialEntryCommand) => Promise<FinancialEvent>;
   updateEvent: (id: string, updates: Partial<FinancialEvent>) => Promise<FinancialEvent>;
   deleteEvent: (id: string) => Promise<boolean>;
   commitImportBatch: (batch: ImportBatch, newEvents: FinancialEvent[], updatedEvents: FinancialEvent[]) => Promise<void>;
@@ -104,7 +106,20 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     );
   }, [summary, statements, emiPlans, events, planningConfig, period.through]);
 
+  const executeCommand = async (cmd: CreateFinancialEntryCommand) => {
+    const result = validateFinancialCommand(cmd, accounts);
+    if (!result.isValid || !result.builtEvent) {
+      throw new Error(result.errors.join(' '));
+    }
+    const created = await repository.addEvent(result.builtEvent);
+    await loadData();
+    return created;
+  };
+
   const addEvent = async (eventData: Omit<FinancialEvent, 'id'>) => {
+    if (!Number.isSafeInteger(eventData.income_paise) || !Number.isSafeInteger(eventData.spending_paise)) {
+      throw new Error('Income and spending paise must be finite safe integers.');
+    }
     const created = await repository.addEvent(eventData);
     await loadData();
     return created;
@@ -199,6 +214,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         period,
         setPeriod,
         isLoading,
+        executeCommand,
         addEvent,
         updateEvent,
         deleteEvent,

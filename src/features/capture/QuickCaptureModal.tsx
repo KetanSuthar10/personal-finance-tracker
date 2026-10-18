@@ -3,6 +3,7 @@ import { Account, EventType } from '../../domain/types';
 import { ReceiptCaptureTab } from './ReceiptCaptureTab';
 import { VoiceCaptureTab } from './VoiceCaptureTab';
 import { parseVoiceTranscript } from '../../domain/voice';
+import { validateFinancialCommand } from '../../domain/commandService';
 
 interface QuickCaptureModalProps {
   isOpen: boolean;
@@ -37,28 +38,30 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
     amount_paise: number;
     date: string;
     account_id: string;
+    destination_account_id?: string;
     recipient: string;
     category: string;
     notes?: string;
   }) => {
-    const isSpending = entry.type === 'purchase' || entry.type === 'fee';
-    const isIncome = entry.type === 'income';
+    const validation = validateFinancialCommand(
+      {
+        type: entry.type,
+        amount_paise: entry.amount_paise,
+        date: entry.date,
+        account_id: entry.account_id,
+        destination_account_id: entry.destination_account_id,
+        recipient: entry.recipient,
+        category: entry.category,
+        notes: entry.notes,
+      },
+      accounts
+    );
 
-    await onAddEvent({
-      date: entry.date,
-      type: entry.type,
-      recipient: entry.recipient,
-      category: entry.category || null,
-      income_paise: isIncome ? entry.amount_paise : 0,
-      spending_paise: isSpending ? entry.amount_paise : 0,
-      postings: [
-        {
-          account_id: entry.account_id,
-          delta_paise: isSpending ? -entry.amount_paise : entry.amount_paise
-        }
-      ],
-      notes: entry.notes
-    });
+    if (!validation.isValid || !validation.builtEvent) {
+      throw new Error(validation.errors.join(' '));
+    }
+
+    await onAddEvent(validation.builtEvent);
   };
 
   const handleQuickTextSubmit = async (e: React.FormEvent) => {

@@ -8,19 +8,16 @@ The project is executing the **Production Transition Pack** defined in [docs/pro
 
 The single source of truth for task progress and verified operational evidence is the **[Production Status Ledger](production/STATUS.md)**.
 
-## Prototype baseline vs production status
-
-The repository contains local prototype screens and a suite of 58 automated unit tests built across initial milestones M0–M6. In accordance with the execution contract, existing unit tests and fixture runs establish a local prototype baseline, but **do not constitute evidence of completed production milestones**. 
-
-Production tasks (T00 through T12) require real operational verification (e.g. live Google OAuth, durable Supabase PostgreSQL persistence with RLS, transactional RPCs, and authenticated backend Gemini proxy) before being marked `VERIFIED`.
+## Verified production progress
 
 | Track | Current State | Authoritative Reference |
 | --- | --- | --- |
-| **Active Production Track** | Task T00 (Baseline and Truthful Status) in progress | [docs/production/STATUS.md](production/STATUS.md) |
-| **Prototype Baseline** | 58 passing unit tests across 11 test suites; local Vite build passing | [npm test output / Baseline Report](production/reports/T00.md) |
-| **Diagnostic Audit Reproduction** | 19 baseline diagnostic findings reproduced | [docs/production/evidence/domain-audit-results.json](production/evidence/domain-audit-results.json) |
+| **T00 Baseline and Truthful Status** | `VERIFIED` — Instructions reconciled, simulated OCR/AI gated, CI added | [reports/T00.md](production/reports/T00.md) |
+| **T01 Canonical Writes and Calculations** | `VERIFIED` — AT01–AT03 passed, command service built, carried opening and period slicing verified | [reports/T01.md](production/reports/T01.md) |
+| **Test Suite Baseline** | 69 passing unit tests across 12 test suites; production build passing | `npm test` & `npm run build` |
+| **Diagnostic Audit Reproduction** | 7 issues resolved, 12 remaining for subsequent tasks | [domain-audit-results.json](production/evidence/domain-audit-results.json) |
 
 ## Active task
 
-- **Assigned Task**: `T00 — Baseline and truthful status` ([docs/production/tasks/T00_BASELINE.md](production/tasks/T00_BASELINE.md)).
-- **Immediate Task Outcome**: Reconcile project instructions, gate simulated OCR and browser AI key paths, establish CI workflow, run diagnostic audits, and publish the verified baseline report `docs/production/reports/T00.md`.
+- **Completed Task**: `T01 — Canonical ledger and date correctness` ([docs/production/tasks/T01_LEDGER.md](production/tasks/T01_LEDGER.md)).
+- **Next Assigned Task**: `T02 — Supabase schema and Google authentication` ([docs/production/tasks/T02_DATABASE.md](production/tasks/T02_DATABASE.md)), awaiting user assignment.

@@ -5,7 +5,6 @@ import { Input } from '../../components/ui/Input';
 import { EventType } from '../../domain/types';
 import { useLedger } from '../../context/LedgerContext';
 import { toPaise } from '../../domain/money';
-import { buildEventPostings } from '../../domain/ledger';
 
 export interface AddEntryModalProps {
   isOpen: boolean;
@@ -13,7 +12,7 @@ export interface AddEntryModalProps {
 }
 
 export const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose }) => {
-  const { accounts, addEvent } = useLedger();
+  const { accounts, executeCommand } = useLedger();
 
   const [type, setType] = useState<EventType>('purchase');
   const [date, setDate] = useState('2026-10-18');
@@ -59,40 +58,24 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({ isOpen, onClose })
         return;
       }
 
-      if (type === 'own_transfer' && primaryAccountId === destinationAccountId) {
-        setError('Source and destination accounts must be different.');
-        return;
-      }
-
-      if (type === 'card_payment' && primaryAccountId === destinationAccountId) {
-        setError('Source bank and card destination must be different.');
-        return;
-      }
-
       const effectiveRecipient =
         type === 'own_transfer'
-          ? `Transfer to ${accounts.find((a) => a.id === destinationAccountId)?.label}`
+          ? `Transfer to ${accounts.find((a) => a.id === destinationAccountId)?.label || 'destination'}`
           : type === 'card_payment'
-          ? `Repayment to ${accounts.find((a) => a.id === destinationAccountId)?.label}`
-          : recipient.trim() || 'Unspecified';
-
-      const postingSpec = buildEventPostings(
-        type,
-        paise,
-        primaryAccountId,
-        type === 'own_transfer' || type === 'card_payment' ? destinationAccountId : undefined
-      );
+          ? `Repayment to ${accounts.find((a) => a.id === destinationAccountId)?.label || 'card'}`
+          : recipient.trim();
 
       setIsSubmitting(true);
 
-      await addEvent({
+      await executeCommand({
         date,
         type,
+        amount_paise: paise,
+        account_id: primaryAccountId,
+        destination_account_id:
+          type === 'own_transfer' || type === 'card_payment' ? destinationAccountId : undefined,
         recipient: effectiveRecipient,
         category: category.trim() || null,
-        income_paise: postingSpec.income_paise,
-        spending_paise: postingSpec.spending_paise,
-        postings: postingSpec.postings,
         linked_purchase_id: type === 'refund' && linkedPurchaseId.trim() ? linkedPurchaseId.trim() : undefined,
         notes: notes.trim() || undefined,
       });
