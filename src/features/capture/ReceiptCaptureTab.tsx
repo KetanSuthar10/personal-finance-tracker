@@ -26,6 +26,7 @@ export const ReceiptCaptureTab: React.FC<ReceiptCaptureTabProps> = ({
   const [extractedData, setExtractedData] = useState<ExtractedReceiptData | null>(null);
   const [rawText, setRawText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [uploadNotice, setUploadNotice] = useState<string | null>(null);
 
   // Editable draft fields
   const [amountRupees, setAmountRupees] = useState('');
@@ -57,6 +58,7 @@ export const ReceiptCaptureTab: React.FC<ReceiptCaptureTabProps> = ({
   };
 
   const handleSelectSample = (sampleText: string) => {
+    setUploadNotice(null);
     setIsProcessing(true);
     setTimeout(() => {
       const parsed = parseReceiptText(sampleText);
@@ -72,24 +74,14 @@ export const ReceiptCaptureTab: React.FC<ReceiptCaptureTabProps> = ({
     const reader = new FileReader();
     reader.onload = () => {
       setImagePreview(reader.result as string);
-      setIsProcessing(true);
-
-      // In client browser, simulate OCR reading from the file
-      // If filename contains clues or sample, use matching fixture text, else generic invoice format
-      setTimeout(() => {
-        let simulatedText = SAMPLE_RECEIPT_FIXTURES[0].text;
-        if (file.name.toLowerCase().includes('swiggy') || file.name.toLowerCase().includes('food')) {
-          simulatedText = SAMPLE_RECEIPT_FIXTURES[1].text;
-        } else if (file.name.toLowerCase().includes('petrol') || file.name.toLowerCase().includes('fuel')) {
-          simulatedText = SAMPLE_RECEIPT_FIXTURES[2].text;
-        } else if (file.name.toLowerCase().includes('bill') || file.name.toLowerCase().includes('store')) {
-          simulatedText = SAMPLE_RECEIPT_FIXTURES[3].text;
-        }
-
-        const parsed = parseReceiptText(simulatedText);
-        handleApplyExtracted(parsed);
-        setIsProcessing(false);
-      }, 500);
+      setIsProcessing(false);
+      // Safety gate (F01): Do not fabricate OCR extraction for custom image uploads.
+      // Real on-device client OCR is implemented in Task T09.
+      setExtractedData(null);
+      setRawText('');
+      setUploadNotice(
+        `File "${file.name}" received. Live on-device image OCR is scheduled for Task T09. Simulated OCR extraction has been gated to prevent fabricated records. To test parser heuristics, select one of the synthetic sample fixtures below or enter transaction details manually.`
+      );
     };
     reader.readAsDataURL(file);
   };
@@ -107,7 +99,7 @@ export const ReceiptCaptureTab: React.FC<ReceiptCaptureTabProps> = ({
       account_id: accountId,
       recipient: recipient.trim(),
       category: category.trim() || 'General',
-      notes: notes ? `[Receipt OCR] ${notes}` : '[Receipt OCR]'
+      notes: notes ? `[Synthetic Receipt Preview] ${notes}` : '[Synthetic Receipt Preview]'
     });
 
     setSaveSuccess(true);
@@ -119,13 +111,13 @@ export const ReceiptCaptureTab: React.FC<ReceiptCaptureTabProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Sample Fixtures Quick Load */}
+      {/* Synthetic Fixtures Quick Load */}
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-            Quick Test With Sample Payment Screenshots
+            Synthetic Sample Fixtures (Parser Preview / Testing Only)
           </span>
-          <span className="text-[11px] text-slate-500">Zero network upload</span>
+          <span className="text-[11px] text-indigo-400">Deterministic text fixtures</span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {SAMPLE_RECEIPT_FIXTURES.map((sample, idx) => (
@@ -159,26 +151,45 @@ export const ReceiptCaptureTab: React.FC<ReceiptCaptureTabProps> = ({
           <span className="text-sm font-medium text-indigo-400 hover:underline">
             Choose payment screenshot or receipt photo
           </span>
-          <span className="text-xs text-slate-500">
-            PNG, JPG, WebP supported. Parsed locally on your device.
+          <span className="text-xs text-amber-400/90 font-medium">
+            Custom OCR Gated (Scheduled for Task T09) · Preview synthetic parser above
           </span>
         </label>
       </div>
 
-      {isProcessing && (
-        <div className="p-3 text-center text-xs text-indigo-300 bg-indigo-950/30 rounded-lg animate-pulse">
-          Extracting text and identifying financial fields...
+      {uploadNotice && (
+        <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-200 text-xs space-y-1">
+          <div className="font-semibold flex items-center gap-1.5 text-amber-300">
+            <span>🛡️</span> Custom Image Extraction Gated
+          </div>
+          <p className="text-[11px] leading-relaxed text-amber-200/90">
+            {uploadNotice}
+          </p>
         </div>
       )}
 
-      {/* Image Preview & Raw OCR Snippet */}
+      {isProcessing && (
+        <div className="p-3 text-center text-xs text-indigo-300 bg-indigo-950/30 rounded-lg animate-pulse">
+          Parsing synthetic receipt fixture...
+        </div>
+      )}
+
+      {/* Image Preview */}
       {imagePreview && (
         <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-950/70 border border-slate-800">
           <img src={imagePreview} alt="Receipt preview" className="h-16 w-16 object-cover rounded-lg border border-slate-700" />
           <div className="flex-1 min-w-0 text-xs">
-            <span className="font-semibold text-slate-300 block">Uploaded Receipt</span>
-            <span className="text-[11px] text-slate-500 truncate block">{rawText.slice(0, 80)}...</span>
+            <span className="font-semibold text-slate-300 block">Uploaded File Image</span>
+            <span className="text-[11px] text-slate-400 block mt-0.5">Custom file OCR engine scheduled for T09. Zero network transmission.</span>
           </div>
+        </div>
+      )}
+
+      {/* Raw Synthetic Text Snippet */}
+      {rawText && (
+        <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 text-[11px] text-slate-400">
+          <span className="font-semibold text-slate-300 block mb-0.5">Synthetic Fixture Text:</span>
+          <span className="truncate block font-mono text-[10px] text-slate-400">{rawText.slice(0, 100)}...</span>
         </div>
       )}
 
@@ -187,10 +198,10 @@ export const ReceiptCaptureTab: React.FC<ReceiptCaptureTabProps> = ({
         <form onSubmit={handleSave} className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
           <div className="flex items-center justify-between pb-2 border-b border-slate-800">
             <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-              <span>✓</span> Extracted Transaction Details (Review & Edit)
+              <span>✓</span> Synthetic Parsed Fields (Review & Edit)
             </h4>
             <span className="text-[11px] text-slate-400">
-              Confidence: {Math.round(extractedData.confidence_score * 100)}%
+              Heuristic Confidence: {Math.round(extractedData.confidence_score * 100)}%
             </span>
           </div>
 

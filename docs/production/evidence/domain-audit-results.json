@@ -1,0 +1,159 @@
+[
+  {
+    "id": "PERIOD_OPENING",
+    "description": "Period opening should carry earlier postings",
+    "actual": 148000,
+    "expected": 630000,
+    "issue_reproduced": true
+  },
+  {
+    "id": "INVALID_DATE",
+    "description": "Impossible date should be rejected",
+    "actual": "2026-02-31",
+    "expected": "REJECT",
+    "issue_reproduced": true
+  },
+  {
+    "id": "UNSAFE_NUMERIC_MONEY",
+    "description": "Number input should enforce safe integer paise",
+    "actual": false,
+    "expected": true,
+    "issue_reproduced": true
+  },
+  {
+    "id": "FALSE_EXACT",
+    "description": "Different merchant same amount within 3 days should require review",
+    "actual": "EXACT_MATCH",
+    "expected": "UNCERTAIN_MATCH",
+    "issue_reproduced": true
+  },
+  {
+    "id": "TWO_ROWS_ONE_EVENT",
+    "description": "Distinct transactions must not both collapse into one manual event",
+    "actual": {
+      "newEvents": 0,
+      "updatedEvents": 1
+    },
+    "expected": {
+      "newEvents": 1,
+      "updatedEvents": 1
+    },
+    "issue_reproduced": true
+  },
+  {
+    "id": "CROSS_ACCOUNT_DEDUP",
+    "description": "Reference deduplication must be scoped to account",
+    "actual": "DUPLICATE_IMPORT",
+    "expected": "NEW_RECORD",
+    "issue_reproduced": true
+  },
+  {
+    "id": "BANK_REFUND_AS_INCOME",
+    "description": "Bank refund should not be additional income",
+    "actual": "income",
+    "expected": "refund",
+    "issue_reproduced": true
+  },
+  {
+    "id": "CARD_IMPORT_REVERSED",
+    "description": "Imported card repayment should credit card and debit bank",
+    "actual": [
+      {
+        "account_id": "demo-card",
+        "delta_paise": -50000
+      },
+      {
+        "account_id": "demo-bank",
+        "delta_paise": 50000
+      }
+    ],
+    "expected": [
+      {
+        "account_id": "demo-bank",
+        "delta_paise": -50000
+      },
+      {
+        "account_id": "demo-card",
+        "delta_paise": 50000
+      }
+    ],
+    "issue_reproduced": true
+  },
+  {
+    "id": "SETTLED_EMI_REAPPEARS",
+    "description": "EMI included in paid bill should not reappear",
+    "actual": 20000,
+    "expected": 0,
+    "issue_reproduced": true
+  },
+  {
+    "id": "PAYMENT_REUSED",
+    "description": "One payment must not be allocated to two statements",
+    "actual": 100000,
+    "expected": 50000,
+    "issue_reproduced": true
+  },
+  {
+    "id": "MULTI_MONTH_HORIZON",
+    "description": "90-day horizon must account for multiple monthly instalments",
+    "actual": 20000,
+    "expected": 60000,
+    "issue_reproduced": true
+  },
+  {
+    "id": "INVALID_BACKUP_ACCEPTED",
+    "description": "Backup must reject income/posting inconsistency",
+    "actual": true,
+    "expected": false,
+    "issue_reproduced": true
+  },
+  {
+    "id": "LEARNED_RULE_NOT_APPLIED",
+    "description": "Saved recipient rule should categorise new entry",
+    "actual": "General",
+    "expected": "Audit Custom",
+    "issue_reproduced": true
+  },
+  {
+    "id": "BACKUP_OMITS_RULES",
+    "description": "Complete backup must include learned rules",
+    "actual": false,
+    "expected": true,
+    "issue_reproduced": true
+  },
+  {
+    "id": "UNSPECIFIED_AMOUNT_INVENTED",
+    "description": "Missing amount must request clarification",
+    "actual": 12000,
+    "expected": null,
+    "issue_reproduced": true
+  },
+  {
+    "id": "HARDCODED_ASSISTANT_PERIOD",
+    "description": "November request should not return October",
+    "actual": "2026-10-01",
+    "expected": "2026-11-01",
+    "issue_reproduced": true
+  },
+  {
+    "id": "RAW_QUERY_UNMASKED",
+    "description": "Identifiers in user questions must be masked",
+    "actual": true,
+    "expected": false,
+    "issue_reproduced": true
+  },
+  {
+    "id": "TOOL_RESULT_UNMASKED",
+    "description": "Identifiers in tool responses must be masked",
+    "actual": true,
+    "expected": false,
+    "issue_reproduced": true
+  },
+  {
+    "id": "UNDO_DELETES_OTHER_PROVENANCE",
+    "description": "Undo A must retain event supported by active B",
+    "actual": false,
+    "expected": true,
+    "issue_reproduced": true
+  }
+]

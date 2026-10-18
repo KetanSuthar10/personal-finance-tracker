@@ -222,8 +222,8 @@ export const AssistantPage: React.FC = () => {
           <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs">
             {apiKey ? (
               <>
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span className="text-emerald-400 font-medium">Live Gemini</span>
+                <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                <span className="text-indigo-400 font-medium">Prototype Key (Preview)</span>
               </>
             ) : (
               <>

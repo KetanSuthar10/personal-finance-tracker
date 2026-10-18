@@ -1,52 +1,26 @@
-# Current project status
+# Project status entry point
 
 Updated: 18 October 2026, Asia/Kolkata
 
-## Current state
+## Authoritative status ledger
 
-Milestones M0 through M6 are complete and verified. The application includes a unified multi-mode capture workflow (`QuickCaptureModal.tsx`) featuring client-side receipt/payment screenshot OCR (`src/domain/ocr.ts`), live Web Speech API voice dictation & audio notes parsing (`src/domain/voice.ts`), fast natural language shorthand entry, PWA installability with offline service worker (`public/sw.js`, `public/manifest.webmanifest`), and non-intrusive offline connectivity alerts (`OfflineBanner.tsx`). All 58 automated unit tests pass cleanly across 11 test suites, and the production build compiles with zero errors.
+The project is executing the **Production Transition Pack** defined in [docs/production/00_MASTER_PLAN.md](production/00_MASTER_PLAN.md) and governed by [docs/production/01_EXECUTION_CONTRACT.md](production/01_EXECUTION_CONTRACT.md).
 
-| Milestone | Status |
-| --- | --- |
-| Starter pack | Complete (documentation starter and fixtures) |
-| M0 review / M1 task plan | Complete (`docs/M1_TASK_PLAN.md` created) |
-| M1 synthetic prototype | Complete and verified locally (`npm test`, `npm run build`, `npm run dev`) |
-| M2 imports & reconciliation | Complete and verified (`docs/M2_TASK_PLAN.md`, CSV fixtures, unit tests) |
-| M3 connected storage/auth | Complete and verified (`docs/M3_TASK_PLAN.md`, SQL schema & RLS, export/restore engine) |
-| M4 cards/EMIs & planning | Complete and verified (`docs/M4_TASK_PLAN.md`, card statements, EMIs, planning horizon) |
-| M5 Gemini integration | Complete and verified (`docs/M5_TASK_PLAN.md`, bounded tools, rules engine, assistant UI) |
-| M6 capture/release | Complete and verified (`docs/M6_TASK_PLAN.md`, OCR, voice dictation, PWA polish) |
-| M7 optional n8n | Ready for decision / optional automation flows |
+The single source of truth for task progress and verified operational evidence is the **[Production Status Ledger](production/STATUS.md)**.
 
-## Immediate next action
+## Prototype baseline vs production status
 
-Review the running application at `http://127.0.0.1:5173/`. Test the "Scan / Dictate" button in the header across all three capture modes (📸 Screenshot OCR, 🎙️ Voice & Audio Notes, ⚡ Fast Text Entry). Await user direction on optional M7 automated n8n jobs or final deployment.
+The repository contains local prototype screens and a suite of 58 automated unit tests built across initial milestones M0–M6. In accordance with the execution contract, existing unit tests and fixture runs establish a local prototype baseline, but **do not constitute evidence of completed production milestones**. 
 
-## True blockers
+Production tasks (T00 through T12) require real operational verification (e.g. live Google OAuth, durable Supabase PostgreSQL persistence with RLS, transactional RPCs, and authenticated backend Gemini proxy) before being marked `VERIFIED`.
 
-None for local development.
+| Track | Current State | Authoritative Reference |
+| --- | --- | --- |
+| **Active Production Track** | Task T00 (Baseline and Truthful Status) in progress | [docs/production/STATUS.md](production/STATUS.md) |
+| **Prototype Baseline** | 58 passing unit tests across 11 test suites; local Vite build passing | [npm test output / Baseline Report](production/reports/T00.md) |
+| **Diagnostic Audit Reproduction** | 19 baseline diagnostic findings reproduced | [docs/production/evidence/domain-audit-results.json](production/evidence/domain-audit-results.json) |
 
-## Latest validation evidence
+## Active task
 
-1. **Automated Unit Tests (`npm test`)**:
-   - `src/tests/ocr.test.ts`: 7/7 tests passed. Verified text extraction across Google Pay, PhonePe, Paytm, and POS store receipts, date normalization to `YYYY-MM-DD`, merchant category auto-suggestion, and robust empty/gibberish handling.
-   - `src/tests/voice.test.ts`: 5/5 tests passed. Verified Indian English spoken number translation (`wordsToNumber`), utterance parsing for purchases, freelance income, and shorthand dictations (`120 cafe, UPI`).
-   - `src/tests/assistant.test.ts`: 8/8 tests passed.
-   - `src/tests/rules.test.ts`: 5/5 tests passed.
-   - `src/tests/backup.test.ts`: 6/6 tests passed.
-   - `src/tests/cards.test.ts`: 5/5 tests passed.
-   - `src/tests/reconciliation.test.ts`: 4/4 tests passed.
-   - `src/tests/importer.test.ts`: 3/3 tests passed.
-   - `src/tests/ledger.test.ts`: 6/6 tests passed.
-   - `src/tests/money.test.ts`: 6/6 tests passed.
-   - `src/tests/repository.test.ts`: 3/3 tests passed.
-   - **Total test suite: 58/58 passed across 11 test suites.**
-2. **TypeScript & Production Build (`npm run build`)**:
-   - Passed strictly with code 0 (`tsc && vite build`).
-3. **Local Development Server**:
-   - Active on `http://127.0.0.1:5173/`. Verified via HTTP 200 response.
-
-
-
-
-
+- **Assigned Task**: `T00 — Baseline and truthful status` ([docs/production/tasks/T00_BASELINE.md](production/tasks/T00_BASELINE.md)).
+- **Immediate Task Outcome**: Reconcile project instructions, gate simulated OCR and browser AI key paths, establish CI workflow, run diagnostic audits, and publish the verified baseline report `docs/production/reports/T00.md`.

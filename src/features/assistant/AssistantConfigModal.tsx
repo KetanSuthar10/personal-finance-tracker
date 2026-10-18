@@ -45,10 +45,10 @@ export const AssistantConfigModal: React.FC<AssistantConfigModalProps> = ({
         <div className="p-5 border-b border-slate-800 flex items-center justify-between">
           <div>
             <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <span>⚙️</span> Gemini Assistant & Privacy Config
+              <span>⚙️</span> Gemini Assistant & Prototype Config
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              Control API connection, model choice, and privacy masking
+              Local deterministic engine · Prototype client key preview · Backend proxy in T10
             </p>
           </div>
           <button
@@ -62,19 +62,19 @@ export const AssistantConfigModal: React.FC<AssistantConfigModalProps> = ({
 
         {/* Content */}
         <div className="p-5 space-y-4 text-sm">
-          {/* Privacy & Invariant Notice */}
+          {/* Architectural Safety Notice */}
           <div className="p-3.5 rounded-xl bg-indigo-950/30 border border-indigo-500/20 text-xs text-indigo-200/90 space-y-1.5">
             <div className="font-semibold text-indigo-300 flex items-center gap-1.5">
-              <span>🛡️</span> Data Privacy & Arithmetic Integrity Guarantees
+              <span>🛡️</span> Backend Proxy Architecture & Data Safety (Task T10)
             </div>
             <p className="text-[11px] leading-relaxed text-indigo-200/80">
-              1. <strong>Identifier Masking</strong>: Bank account numbers, card suffixes, and tax IDs are masked before any network request.
+              1. <strong>Production Target</strong>: In production, Gemini is accessed exclusively through an authenticated Supabase Edge Function proxy with server-side secrets and enforced outbound privacy masking.
             </p>
             <p className="text-[11px] leading-relaxed text-indigo-200/80">
-              2. <strong>Arithmetic Authority</strong>: Gemini is strictly an explanatory layer. All numbers, sums, and commitments are derived by verified deterministic ledger code.
+              2. <strong>Prototype Client Key</strong>: Entering an API key in this browser session is a developer evaluation aid. It is never persisted to disk or backend storage.
             </p>
             <p className="text-[11px] leading-relaxed text-indigo-200/80">
-              3. <strong>Prototype Isolation</strong>: Without an API key, the app runs entirely in high-fidelity local deterministic mode with 0 network calls.
+              3. <strong>Arithmetic Authority</strong>: Gemini provides explanations and drafts proposals; deterministic ledger code computes all balances and enforces financial invariants.
             </p>
           </div>
 
@@ -88,8 +88,8 @@ export const AssistantConfigModal: React.FC<AssistantConfigModalProps> = ({
               onChange={e => setSelectedModel(e.target.value)}
               className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
             >
-              <option value="gemini-1.5-flash">Gemini 1.5 Flash (Recommended - Fast & Function Calling)</option>
-              <option value="gemini-2.0-flash">Gemini 2.0 Flash (Preview)</option>
+              <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast & Tool Calling)</option>
+              <option value="gemini-2.0-flash">Gemini 2.0 Flash (Experimental Preview)</option>
               <option value="gemini-1.5-pro">Gemini 1.5 Pro (In-depth Analysis)</option>
             </select>
           </div>
@@ -98,7 +98,7 @@ export const AssistantConfigModal: React.FC<AssistantConfigModalProps> = ({
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-semibold uppercase tracking-wider text-slate-300">
-                Gemini API Key (Optional)
+                Prototype Client API Key (Optional)
               </label>
               {keyInput && (
                 <button
@@ -118,7 +118,7 @@ export const AssistantConfigModal: React.FC<AssistantConfigModalProps> = ({
               className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 font-mono focus:outline-none focus:border-indigo-500"
             />
             <p className="text-[11px] text-slate-400 mt-1">
-              Keys are stored only in volatile session memory. Never paste production credentials in public fixtures.
+              Volatile browser session only. Production uses server-managed credentials in Supabase Edge Functions.
             </p>
           </div>
 
@@ -126,9 +126,9 @@ export const AssistantConfigModal: React.FC<AssistantConfigModalProps> = ({
           <div className="p-3 rounded-lg bg-slate-950/60 border border-slate-800 flex items-center justify-between text-xs">
             <span className="text-slate-400">Current Mode:</span>
             {keyInput ? (
-              <span className="text-emerald-400 font-medium flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                Connected Live Gemini ({selectedModel})
+              <span className="text-indigo-400 font-medium flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                Prototype Client Key Preview ({selectedModel})
               </span>
             ) : (
               <span className="text-amber-400 font-medium flex items-center gap-1.5">

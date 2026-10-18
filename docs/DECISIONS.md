@@ -20,31 +20,32 @@
 | D12 | Antigravity is installed and will be the primary local development environment |
 | D13 | Documentation-first project starter; connect to the owner's Git later |
 
-## Proposed implementation defaults
+## Production master plan decisions (T00 transition)
 
-React/TypeScript/Vite, Tailwind/shadcn/ui/Recharts, Supabase database/Auth/Edge Functions, Google login, Cloudflare Pages. INR-only and Asia/Kolkata. Light-first, accessible mobile/desktop design. Synthetic local demo before credentials. n8n optional, outside the core request path. Original-document retention local/transient until a storage preference is chosen. Git repository working name `personal-finance-tracker`, Private visibility.
+| ID | Decision | Reference |
+| --- | --- | --- |
+| D14 | Transition from initial prototype/milestone sequence to the Production Transition Pack (`docs/production/00_MASTER_PLAN.md`). M0–M6 status retired as prototype-only; verified production tasks are tracked in `docs/production/STATUS.md`. | [00_MASTER_PLAN.md](production/00_MASTER_PLAN.md) |
+| D15 | Hosting: Retain existing Vercel deployment; supersedes earlier Cloudflare Pages recommendation to avoid unnecessary infrastructure migrations. | [00_MASTER_PLAN.md §2](production/00_MASTER_PLAN.md) |
+| D16 | Production state: Production starts empty with zero seeded fixture data. Fails closed when unconfigured or unauthenticated; synthetic fixtures are strictly isolated to tests and dev mode. | [00_MASTER_PLAN.md §1](production/00_MASTER_PLAN.md) |
+| D17 | Gemini architecture: Backend Edge Function proxy with server-side API key, rate limiting, and strict outbound masking. Browser-entered keys and simulated client-side OCR are gated as prototype previews. | [00_MASTER_PLAN.md §7](production/00_MASTER_PLAN.md) |
+| D18 | Access control: Single-owner Google OAuth backed by Supabase Auth, PostgreSQL RLS policies, and server-configured owner UUID verification. | [00_MASTER_PLAN.md §6](production/00_MASTER_PLAN.md) |
+| D19 | Financial writes: Transactional PostgreSQL RPCs enforcing event/posting balance invariants and idempotency at the database boundary. | [00_MASTER_PLAN.md §3](production/00_MASTER_PLAN.md) |
 
-These are established planning recommendations, not statements that infrastructure is already active. Material changes should be recorded here; ordinary technical choices can be resolved within these defaults.
+## Implementation defaults
+
+React/TypeScript/Vite, Tailwind CSS, Recharts, Supabase PostgreSQL/Auth/Edge Functions, Google OAuth, Vercel hosting. INR-only (integer paise) and Asia/Kolkata timezone. Responsive mobile/desktop layout. Local synthetic fixtures for testing only.
 
 ## Evidence and open items
 
-| Item | Evidence / uncertainty | Earliest milestone affected |
+| Item | Evidence / uncertainty | Earliest task affected |
 | --- | --- | --- |
-| Gemini project | Screenshot showed an existing key on a Free Tier project | M5 |
-| Pro access | Screenshot showed Pro recognised for AI Studio chat | Development tool / account setup |
-| Successful API calls and quotas | Not verified; get actual project limits and run a permitted test | M5 |
-| Developer credits | Public docs list eligible Pro benefits; this account's redemption/eligibility unknown | M5 budget route |
-| Prepaid activation | Current docs can require a paid balance before promotional credits; no top-up authorised | M5 real-data route |
-| Real-data policy | Unpaid Gemini restrictions remain relevant despite masking; verify appropriate route | M5 |
-| Statement layouts | Banks/cards and password/scanned formats not supplied | M2 adapters |
-| Owner login | Account allowlist and production domain not selected | M3 |
-| n8n | User reports subscription; hosted configuration, quotas and desired jobs unknown | Optional M7 |
-| Voice | Phone/browser and transcription privacy route not selected | M6 |
-| Notifications | In-app first is a proposal; external channel not chosen | M4/M7 |
-| Savings/horizon | Owner's allocation and payday not supplied; use synthetic settings in demo | M4 real use |
-
-None of these external-account items blocks documentation review or synthetic M1 development.
+| Supabase project & migrations | Unverified; project URL and keys needed in T02 | T02 |
+| Google OAuth client | Unverified; Google Cloud Console credentials needed in T02 | T02 |
+| Gemini project quota / route | Unverified; zero-spend verification needed in T10 | T10 |
+| Statement layouts | Bank/card real PDF/CSV samples not yet supplied | T04 / T08 |
+| Real browser OCR | Client image-to-text OCR engine needed for AT17 | T09 |
 
 ## Change record
 
-- 2026-10-18: Created documentation starter from the agreed discussion. No code scaffold, provider account change, live inference, deployment, workflow or remote repository created.
+- 2026-10-18: Created documentation starter from agreed requirements.
+- 2026-10-18: Executed T00 baseline reconciliation. Formally adopted Production Transition Pack (`docs/production/00_MASTER_PLAN.md`), merged `AGENTS_UPDATE_INSTRUCTIONS.md` into `AGENTS.md`, aligned hosting on Vercel, gated prototype OCR/Gemini paths, and established production evidence ledger.

@@ -2,20 +2,24 @@
 
 An installable personal finance web app for bank/card statement imports, daily expense capture, remembered categorisation, card bills, EMIs, and an integrated Gemini assistant.
 
-**Status: Milestone M1 runnable prototype, version 0.1, 18 October 2026 (Asia/Kolkata).** Local React/TypeScript/Vite prototype with Overview, Accounts, Transactions, Manual Entry, and deterministic integer paise accounting verified against bundled synthetic fixtures. No external backend credentials, live AI keys, or cloud deployments are required for this milestone.
+**Status: Production Transition (Task T00 Baseline), 18 October 2026 (Asia/Kolkata).**
+The application is transitioning from the local prototype milestone phase to the production release sequence guided by the [Production Master Plan](docs/production/00_MASTER_PLAN.md) and [Execution Contract](docs/production/01_EXECUTION_CONTRACT.md). Current progress and verified evidence are recorded in the [Production Status Ledger](docs/production/STATUS.md).
+
+> [!NOTE]
+> The repository contains working local prototype screens and a suite of 58 automated unit tests operating on synthetic fixtures. In production, the application starts with an empty database per authenticated owner, fails closed when unauthenticated, and uses an authenticated backend Gemini proxy.
 
 ## Running the application locally
 
-Ensure Node LTS (v20+ or v22+) is installed.
+Ensure Node (v20+ or v24+) is installed.
 
 ```bash
 # 1. Install pinned dependencies
 npm install
 
-# 2. Run automated financial invariant & accounting test suite
+# 2. Run automated financial invariant & unit test suite
 npm test
 
-# 3. Build production bundle (TypeScript type checking + Vite bundler)
+# 3. Build production bundle (TypeScript type check + Vite bundler)
 npm run build
 
 # 4. Start local development server
@@ -24,31 +28,26 @@ npm run dev
 
 The application will start at `http://127.0.0.1:5173/` or `http://localhost:5173/`.
 
-## Key features implemented in M1
+## Architecture & Production Transition
 
-- **Deterministic Integer Paise Accounting**: All monetary arithmetic operates in integer paise (`1 INR = 100 paise`), preventing floating point rounding errors.
-- **Signed Net-Position Ledger**: Bank and cash assets are positive; credit card liabilities are negative and presented as positive outstanding balances.
-- **Overview Dashboard**: Five key metric cards (Received Income, Net Spending, Liquid Funds, Card Outstanding, Net Position) with explicit mathematical invariant proof banner:
-  $$\text{Opening (₹1,200)} + \text{Income (₹6,000)} - \text{Spending (₹900)} = \text{Closing (₹6,300)}$$
-- **Visual & Accessible Breakdowns**: Category spending chart with both Recharts visualization and accessible tabular breakdown.
-- **Accounts Screen**: Bank, Cash, and Card accounts displaying opening positions, period deltas, and current balances.
-- **Transactions Ledger & Drawer**: Search, filter by account/category/type, responsive table and card views, and slide-over detail drawer showing exact account postings and provenance.
-- **Manual Daily Entry**: Modal supporting 5 economic event types (Expense, Income, Refund, Own Transfer, Card Repayment) with immediate ledger updates.
-- **Reset Demo Data**: Easily restore the exact initial synthetic fixture state at any time.
-- **Clear Milestone Navigation**: Upcoming capabilities (Statements & Imports [M2], Cards & EMIs [M4], Gemini Assistant [M5], Settings & Sync [M3]) are honestly labelled as planned milestones without fake integrations.
+| Component | Prototype State | Production Target (Master Plan) |
+| --- | --- | --- |
+| **Auth & Identity** | Local session / demo owner | Supabase Auth with Google OAuth, server-controlled owner UUID whitelist |
+| **Ledger Persistence** | Browser memory / LocalStorage | Supabase PostgreSQL with Row Level Security (RLS) & transactional RPCs |
+| **Accounting Engine** | Integer paise arithmetic, signed net position | Shared validated domain contracts, atomic database balance invariants |
+| **Gemini AI Assistant** | Local deterministic stub / optional session key | Authenticated Supabase Edge Function proxy, server-side key, outbound identifier masking |
+| **Receipt / Document Capture** | Synthetic preview & fixture testing | Real on-device / client-side OCR and maintained document parsers |
+| **Hosting** | Local Vite dev server | Existing Vercel deployment with continuous integration (GitHub Actions) |
 
 ## Documentation Index
 
 | File | Purpose |
 | --- | --- |
-| [AGENTS.md](AGENTS.md) | Invariants and instructions for coding assistants |
-| [docs/PRD.md](docs/PRD.md) | Product scope, user journeys, acceptance criteria |
-| [docs/M1_TASK_PLAN.md](docs/M1_TASK_PLAN.md) | M1 concrete implementation plan and verification checklist |
-| [docs/STATUS.md](docs/STATUS.md) | Current progress, latest validation evidence, and next actions |
-| [docs/DATA_MODEL.md](docs/DATA_MODEL.md) | Entities, monetary conventions, reconciliation rules |
-| [docs/TECH_ARCHITECTURE.md](docs/TECH_ARCHITECTURE.md) | Proposed stack, data flows, AI and privacy boundaries |
-| [docs/UX_DESIGN.md](docs/UX_DESIGN.md) | Responsive screens, states, and interaction design |
-| [docs/DECISIONS.md](docs/DECISIONS.md) | Confirmed choices, proposed defaults, unresolved items |
-| [docs/SETUP_AND_GIT.md](docs/SETUP_AND_GIT.md) | Folder, Git, model, and credential setup |
-| [docs/SOURCES.md](docs/SOURCES.md) | Official references for changeable provider facts |
-
+| [AGENTS.md](AGENTS.md) | Controlling instructions, financial invariants, and execution contract |
+| [docs/production/00_MASTER_PLAN.md](docs/production/00_MASTER_PLAN.md) | Production architecture, boundaries, and migration decisions |
+| [docs/production/01_EXECUTION_CONTRACT.md](docs/production/01_EXECUTION_CONTRACT.md) | Rigorous engineering contract and evidence requirements for all tasks |
+| [docs/production/STATUS.md](docs/production/STATUS.md) | **Active production evidence ledger** (tasks T00–T12) |
+| [docs/STATUS.md](docs/STATUS.md) | Entry point to project status pointing to the production ledger |
+| [docs/PRD.md](docs/PRD.md) | Product scope, user journeys, and acceptance criteria |
+| [docs/DECISIONS.md](docs/DECISIONS.md) | Confirmed choices and architectural reconciliations |
+| [docs/production/04_ACCEPTANCE_TESTS.md](docs/production/04_ACCEPTANCE_TESTS.md) | Independent acceptance tests and invariant scenarios |

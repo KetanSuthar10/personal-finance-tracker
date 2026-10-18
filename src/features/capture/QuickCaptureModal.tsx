@@ -123,7 +123,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            <span>📸</span> Screenshot & Receipt OCR
+            <span>📸</span> Receipt OCR (Preview)
           </button>
 
           <button
