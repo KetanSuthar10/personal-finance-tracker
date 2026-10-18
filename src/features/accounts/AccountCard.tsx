@@ -46,15 +46,15 @@ export const AccountCard: React.FC<AccountCardProps> = ({
   };
 
   return (
-    <Card className="hover:border-slate-300 transition-colors">
+    <Card className="hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
       <CardHeader>
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-slate-100">{getAccountIcon()}</div>
+          <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800">{getAccountIcon()}</div>
           <div>
             <div className="flex items-center gap-2">
               <CardTitle>{account.label}</CardTitle>
               {account.masked_suffix && (
-                <span className="text-xs font-mono text-slate-400">{account.masked_suffix}</span>
+                <span className="text-xs font-mono text-slate-400 dark:text-slate-500">{account.masked_suffix}</span>
               )}
             </div>
             <div className="flex flex-col gap-0.5 text-[11px] text-slate-400 mt-0.5">
@@ -64,7 +64,7 @@ export const AccountCard: React.FC<AccountCardProps> = ({
               </div>
               {isCard && (
                 <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700"></span>
                   <span>Statement confirmed: {latestStatementDate ? formatDateDisplay(latestStatementDate) : 'None on file'}</span>
                 </div>
               )}
@@ -79,7 +79,7 @@ export const AccountCard: React.FC<AccountCardProps> = ({
               type="button"
               onClick={() => onEdit(account)}
               title="Edit account details and opening position"
-              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+              className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
             >
               <Edit2 className="w-3.5 h-3.5" />
             </button>
@@ -89,7 +89,7 @@ export const AccountCard: React.FC<AccountCardProps> = ({
 
       <CardContent className="space-y-4 pt-4">
         <div>
-          <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+          <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
             {isCard ? 'Outstanding Balance' : 'Current Balance'}
           </span>
           <div className="mt-1">
@@ -115,10 +115,10 @@ export const AccountCard: React.FC<AccountCardProps> = ({
         </div>
 
         {/* Ledger Breakdown Details */}
-        <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100 text-xs">
+        <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100 dark:border-slate-800/80 text-xs">
           <div>
             <span className="text-slate-400 block text-[11px]">Opening Position:</span>
-            <div className="font-medium text-slate-700 mt-0.5">
+            <div className="font-medium text-slate-700 dark:text-slate-300 mt-0.5">
               <MoneyDisplay paise={account.opening_position_paise} size="sm" />
             </div>
             <span className="text-[10px] text-slate-400 block">

@@ -174,12 +174,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         },
       });
       if (googleError) {
-        setError(googleError.message);
-        return { error: googleError };
+        let message = googleError.message;
+        if (message.includes('provider is not enabled') || message.includes('Unsupported provider')) {
+          message = 'Google login is not yet enabled in your Supabase dashboard. Please go to Supabase -> Authentication -> Providers -> Google, toggle "Enable Google Provider" to ON, and save. In the meantime, you can create an account or sign in with Email below.';
+        }
+        setError(message);
+        return { error: { ...googleError, message } };
       }
       return { error: null };
     } catch (err: any) {
-      const msg = err.message || 'Failed to initiate Google sign in';
+      let msg = err.message || 'Failed to initiate Google sign in';
+      if (msg.includes('provider is not enabled') || msg.includes('Unsupported provider')) {
+        msg = 'Google login is not yet enabled in your Supabase dashboard. Please go to Supabase -> Authentication -> Providers -> Google, toggle "Enable Google Provider" to ON, and save. In the meantime, you can create an account or sign in with Email below.';
+      }
       setError(msg);
       return { error: err };
     }

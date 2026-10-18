@@ -92,16 +92,16 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
 
       {/* Cash Planning Safe-to-Spend Callout */}
       {planningSummary && (
-        <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-indigo-600 text-white">
               <span className="text-sm font-bold">₹</span>
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-indigo-900">
+              <p className="text-xs font-semibold uppercase tracking-wider text-indigo-900 dark:text-indigo-200">
                 Planning Horizon Available ({planningConfig.horizon_days} Days)
               </p>
-              <p className="text-xs text-indigo-700 mt-0.5">
+              <p className="text-xs text-indigo-700 dark:text-indigo-300 mt-0.5">
                 Liquid funds after card obligations, upcoming EMIs, and ₹{(planningConfig.emergency_buffer_paise / 100).toLocaleString('en-IN')} emergency buffer.
               </p>
             </div>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LedgerProvider, useLedger } from './context/LedgerContext';
 import { Shell } from './components/layout/Shell';
@@ -114,9 +115,11 @@ export const ProtectedApp: React.FC = () => {
 
 export function App() {
   return (
-    <AuthProvider>
-      <ProtectedApp />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <ProtectedApp />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

@@ -40,17 +40,17 @@ export const AccountsPage: React.FC = () => {
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">Configured Accounts</h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Configured Accounts</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Real balances derived from verified opening positions and accepted transactions.
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="bg-white rounded-xl border border-slate-200 px-3.5 py-2 shadow-xs">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 px-3.5 py-2 shadow-xs">
             <span className="text-[11px] font-medium text-slate-400 block uppercase">Liquid Assets</span>
             <MoneyDisplay paise={summary.liquid_funds_paise} size="md" variant="success" />
           </div>
-          <div className="bg-white rounded-xl border border-slate-200 px-3.5 py-2 shadow-xs">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 px-3.5 py-2 shadow-xs">
             <span className="text-[11px] font-medium text-slate-400 block uppercase">Card Liabilities</span>
             <MoneyDisplay paise={summary.card_outstanding_paise} size="md" variant="danger" />
           </div>
@@ -67,12 +67,12 @@ export const AccountsPage: React.FC = () => {
 
       {/* Empty State when no accounts exist yet (F18) */}
       {accounts.length === 0 ? (
-        <div className="p-8 sm:p-12 text-center rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4 max-w-lg mx-auto my-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 mb-1">
+        <div className="p-8 sm:p-12 text-center rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4 max-w-lg mx-auto my-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 mb-1">
             <WalletCards className="w-7 h-7" />
           </div>
-          <h3 className="text-base font-bold text-slate-900">No accounts configured yet</h3>
-          <p className="text-xs text-slate-500 leading-relaxed">
+          <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">No accounts configured yet</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
             Your personal finance tracker starts empty. Configure your primary bank account, cash wallet, or credit card to begin recording financial entries.
           </p>
           <Button
@@ -90,7 +90,7 @@ export const AccountsPage: React.FC = () => {
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Landmark className="w-4 h-4 text-indigo-600" />
-              <h3 className="text-sm font-semibold text-slate-800">Liquid Accounts (Bank & Cash)</h3>
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Liquid Accounts (Bank & Cash)</h3>
             </div>
             {assetAccounts.length === 0 ? (
               <p className="text-xs text-slate-400 italic py-2">No liquid asset accounts configured.</p>
@@ -113,7 +113,7 @@ export const AccountsPage: React.FC = () => {
           <div className="space-y-3 pt-2">
             <div className="flex items-center gap-2">
               <ShieldAlert className="w-4 h-4 text-amber-600" />
-              <h3 className="text-sm font-semibold text-slate-800">Credit Cards & Liabilities</h3>
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Credit Cards & Liabilities</h3>
             </div>
             {cardAccounts.length === 0 ? (
               <p className="text-xs text-slate-400 italic py-2">No credit card accounts configured.</p>

@@ -31,7 +31,7 @@ export const Shell: React.FC<ShellProps> = ({
   ];
 
   return (
-    <div className="flex h-screen w-full flex-col bg-slate-50 overflow-hidden">
+    <div className="flex h-screen w-full flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-hidden">
       <OfflineBanner />
       <Header onOpenAddEntry={onOpenAddEntry} onOpenCapture={onOpenCapture} />
 
