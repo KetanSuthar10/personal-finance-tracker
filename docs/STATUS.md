@@ -17,8 +17,9 @@ The single source of truth for task progress and verified operational evidence i
 | **Test Suite Baseline** | 79 passing unit tests across 13 test suites; production build passing | `npm test` & `npm run build` |
 | **Diagnostic Audit Reproduction** | 7 issues resolved, 12 remaining for subsequent tasks | [domain-audit-results.json](production/evidence/domain-audit-results.json) |
 | **T02 Supabase Schema & Auth** | `VERIFIED` — Client configured, persistent session, protected routes, and live hosted database verified | [reports/T02.md](production/reports/T02.md) |
+| **T03 Auth & Remote Sync** | `VERIFIED` — Connected SupabaseLedgerRepository, fail-closed empty start, account lifecycle, focus sync | [reports/T03.md](production/reports/T03.md) |
 
 ## Active task
 
-- **Completed Task**: `T02 — Supabase schema and Google authentication` ([docs/production/tasks/T02_DATABASE.md](production/tasks/T02_DATABASE.md)).
-- **Next Assigned Task**: `T03 — Auth & Remote Sync` ([docs/production/tasks/T03_AUTH_AND_SYNC.md](production/tasks/T03_AUTH_AND_SYNC.md)), awaiting user assignment.
+- **Completed Task**: `T03 — Google login and the first real connected ledger` ([docs/production/tasks/T03_AUTH_AND_SYNC.md](production/tasks/T03_AUTH_AND_SYNC.md)).
+- **Next Assigned Task**: `T04 — Canonical transactions, manual entry and edit flows` ([docs/production/tasks/T04_TRANSACTIONS.md](production/tasks/T04_TRANSACTIONS.md)), awaiting user assignment.

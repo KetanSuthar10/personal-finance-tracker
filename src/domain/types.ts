@@ -116,9 +116,13 @@ export interface Account {
   type: AccountType;
   opening_date: string;
   opening_position_paise: number;
+  current_position_paise?: number;
+  latest_recorded_date?: string;
   currency?: string;
   masked_suffix?: string;
 }
+
+export type CreateAccountData = Omit<Account, 'id' | 'current_position_paise' | 'latest_recorded_date'> & { id?: string };
 
 export interface PeriodSummary {
   from: string;

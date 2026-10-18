@@ -3,16 +3,25 @@ import { Account } from '../../domain/types';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { MoneyDisplay } from '../../components/common/MoneyDisplay';
 import { Badge } from '../../components/ui/Badge';
-import { Landmark, Wallet, CreditCard } from 'lucide-react';
+import { Landmark, Wallet, CreditCard, Edit2, Calendar } from 'lucide-react';
+import { formatDateDisplay } from '../../domain/dates';
 
 export interface AccountCardProps {
   account: Account;
   closingPositionPaise: number;
+  latestStatementDate?: string;
+  onEdit?: (account: Account) => void;
 }
 
-export const AccountCard: React.FC<AccountCardProps> = ({ account, closingPositionPaise }) => {
+export const AccountCard: React.FC<AccountCardProps> = ({
+  account,
+  closingPositionPaise,
+  latestStatementDate,
+  onEdit,
+}) => {
   const isCard = account.type === 'card';
   const deltaPaise = closingPositionPaise - account.opening_position_paise;
+  const recordedDate = account.latest_recorded_date || account.opening_date;
 
   const getAccountIcon = () => {
     switch (account.type) {
@@ -48,10 +57,34 @@ export const AccountCard: React.FC<AccountCardProps> = ({ account, closingPositi
                 <span className="text-xs font-mono text-slate-400">{account.masked_suffix}</span>
               )}
             </div>
-            <p className="text-[11px] text-slate-400 mt-0.5">As-of {account.opening_date}</p>
+            <div className="flex flex-col gap-0.5 text-[11px] text-slate-400 mt-0.5">
+              <div className="flex items-center gap-1.5">
+                <Calendar className="w-3 h-3 text-slate-400" />
+                <span>Recorded balance through: {formatDateDisplay(recordedDate)}</span>
+              </div>
+              {isCard && (
+                <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                  <span>Statement confirmed: {latestStatementDate ? formatDateDisplay(latestStatementDate) : 'None on file'}</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-        {getAccountBadge()}
+
+        <div className="flex items-center gap-1.5">
+          {getAccountBadge()}
+          {onEdit && (
+            <button
+              type="button"
+              onClick={() => onEdit(account)}
+              title="Edit account details and opening position"
+              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+            >
+              <Edit2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
       </CardHeader>
 
       <CardContent className="space-y-4 pt-4">
@@ -84,13 +117,16 @@ export const AccountCard: React.FC<AccountCardProps> = ({ account, closingPositi
         {/* Ledger Breakdown Details */}
         <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100 text-xs">
           <div>
-            <span className="text-slate-400">Opening Position:</span>
+            <span className="text-slate-400 block text-[11px]">Opening Position:</span>
             <div className="font-medium text-slate-700 mt-0.5">
               <MoneyDisplay paise={account.opening_position_paise} size="sm" />
             </div>
+            <span className="text-[10px] text-slate-400 block">
+              As-of {formatDateDisplay(account.opening_date)}
+            </span>
           </div>
           <div>
-            <span className="text-slate-400">Net Movement:</span>
+            <span className="text-slate-400 block text-[11px]">Net Movement:</span>
             <div className="font-medium mt-0.5">
               <MoneyDisplay
                 paise={deltaPaise}
@@ -99,6 +135,9 @@ export const AccountCard: React.FC<AccountCardProps> = ({ account, closingPositi
                 variant={deltaPaise > 0 ? 'success' : deltaPaise < 0 ? 'danger' : 'neutral'}
               />
             </div>
+            <span className="text-[10px] text-slate-400 block">
+              Since opening
+            </span>
           </div>
         </div>
       </CardContent>

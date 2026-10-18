@@ -7,6 +7,7 @@ import {
   EmiPlan,
   CashPlanningConfig,
   CategoryRule,
+  CreateAccountData,
 } from '../domain/types';
 import { calculatePeriodSummary } from '../domain/ledger';
 import { DEMO_FIXTURE, DEMO_STATEMENTS, DEMO_EMIS, DEMO_PLANNING_CONFIG } from './demoFixture';
@@ -166,6 +167,29 @@ export class LocalLedgerRepository implements LedgerRepository {
 
   async getAccounts(): Promise<Account[]> {
     return [...this.accounts];
+  }
+
+  async addAccount(accountData: CreateAccountData): Promise<Account> {
+    const id = accountData.id || `acc_${accountData.type}_${Date.now()}`;
+    const newAcc: Account = {
+      ...accountData,
+      id,
+      current_position_paise: accountData.opening_position_paise,
+    };
+    this.accounts.push(newAcc);
+    this.persist();
+    return newAcc;
+  }
+
+  async updateAccount(id: string, updates: Partial<Account>): Promise<Account> {
+    const idx = this.accounts.findIndex(a => a.id === id);
+    if (idx === -1) {
+      throw new Error(`Account ${id} not found`);
+    }
+    const updated = { ...this.accounts[idx], ...updates };
+    this.accounts[idx] = updated;
+    this.persist();
+    return updated;
   }
 
   async getEvents(options?: { fromDate?: string; throughDate?: string }): Promise<FinancialEvent[]> {

@@ -42,6 +42,7 @@ export const AppContent: React.FC = () => {
       {currentTab === 'overview' && (
         <OverviewPage
           onNavigateToTransactions={handleNavigateToTransactions}
+          onNavigateToAccounts={() => setCurrentTab('accounts')}
           onSelectEvent={handleSelectEvent}
         />
       )}

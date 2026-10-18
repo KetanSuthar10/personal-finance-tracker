@@ -9,11 +9,16 @@ import {
   CashPlanningConfig,
   CashPlanningSummary,
   CategoryRule,
+  CreateAccountData,
 } from '../domain/types';
 import { LocalLedgerRepository } from '../data/localRepository';
+import { SupabaseLedgerRepository } from '../data/supabaseRepository';
 import { DEMO_FIXTURE } from '../data/demoFixture';
 import { calculateCashPlanning } from '../domain/cards';
 import { CreateFinancialEntryCommand, validateFinancialCommand } from '../domain/commandService';
+import { useAuth } from './AuthContext';
+import { isSupabaseConfigured } from '../lib/supabase';
+import { getMonthPeriod } from '../domain/dates';
 
 interface LedgerContextType {
   accounts: Account[];
@@ -28,6 +33,10 @@ interface LedgerContextType {
   period: { from: string; through: string };
   setPeriod: (period: { from: string; through: string }) => void;
   isLoading: boolean;
+  persistenceError: string | null;
+  clearPersistenceError: () => void;
+  addAccount: (accountData: CreateAccountData) => Promise<Account>;
+  updateAccount: (id: string, updates: Partial<Account>) => Promise<Account>;
   addEvent: (eventData: Omit<FinancialEvent, 'id'>) => Promise<FinancialEvent>;
   executeCommand: (cmd: CreateFinancialEntryCommand) => Promise<FinancialEvent>;
   updateEvent: (id: string, updates: Partial<FinancialEvent>) => Promise<FinancialEvent>;
@@ -47,7 +56,17 @@ interface LedgerContextType {
 const LedgerContext = createContext<LedgerContextType | undefined>(undefined);
 
 export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const repository = useMemo(() => new LocalLedgerRepository(), []);
+  const { user } = useAuth();
+  const [persistenceError, setPersistenceError] = useState<string | null>(null);
+
+  // Use SupabaseLedgerRepository for authenticated connected mode; fallback to LocalLedgerRepository only for test/offline
+  const repository = useMemo(() => {
+    if (user && isSupabaseConfigured) {
+      return new SupabaseLedgerRepository();
+    }
+    return new LocalLedgerRepository();
+  }, [user]);
+
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [events, setEvents] = useState<FinancialEvent[]>([]);
   const [batches, setBatches] = useState<ImportBatch[]>([]);
@@ -59,14 +78,26 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     emergency_buffer_paise: 200000,
   });
   const [summary, setSummary] = useState<PeriodSummary | null>(null);
-  const [period, setPeriod] = useState<{ from: string; through: string }>({
-    from: DEMO_FIXTURE.period.from,
-    through: DEMO_FIXTURE.period.through,
-  });
+
+  const initialPeriod = useMemo(() => {
+    if (user && isSupabaseConfigured) {
+      const now = new Date();
+      return getMonthPeriod(now.getFullYear(), now.getMonth() + 1);
+    }
+    return {
+      from: DEMO_FIXTURE.period.from,
+      through: DEMO_FIXTURE.period.through,
+    };
+  }, [user]);
+
+  const [period, setPeriod] = useState<{ from: string; through: string }>(initialPeriod);
   const [isLoading, setIsLoading] = useState(true);
+
+  const clearPersistenceError = () => setPersistenceError(null);
 
   const loadData = useCallback(async () => {
     try {
+      setPersistenceError(null);
       const [accs, evts, sum, bts, stmts, emis, planCfg, rules] = await Promise.all([
         repository.getAccounts(),
         repository.getEvents(),
@@ -85,6 +116,9 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setEmiPlans(emis);
       setPlanningConfig(planCfg);
       setCategoryRules(rules);
+    } catch (err: any) {
+      console.error('Ledger data load error:', err);
+      setPersistenceError(err.message || 'Failed to load ledger data');
     } finally {
       setIsLoading(false);
     }
@@ -92,6 +126,17 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   useEffect(() => {
     loadData();
+  }, [loadData]);
+
+  // Cross-device sync on window focus (AT14)
+  useEffect(() => {
+    const handleFocus = () => {
+      loadData();
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', handleFocus);
+      return () => window.removeEventListener('focus', handleFocus);
+    }
   }, [loadData]);
 
   const planningSummary = useMemo(() => {
@@ -106,35 +151,83 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     );
   }, [summary, statements, emiPlans, events, planningConfig, period.through]);
 
-  const executeCommand = async (cmd: CreateFinancialEntryCommand) => {
-    const result = validateFinancialCommand(cmd, accounts);
-    if (!result.isValid || !result.builtEvent) {
-      throw new Error(result.errors.join(' '));
+  const addAccount = async (accountData: CreateAccountData) => {
+    try {
+      setPersistenceError(null);
+      const created = await repository.addAccount(accountData);
+      await loadData();
+      return created;
+    } catch (err: any) {
+      setPersistenceError(err.message || 'Failed to create account');
+      throw err;
     }
-    const created = await repository.addEvent(result.builtEvent);
-    await loadData();
-    return created;
+  };
+
+  const updateAccount = async (id: string, updates: Partial<Account>) => {
+    try {
+      setPersistenceError(null);
+      const updated = await repository.updateAccount(id, updates);
+      await loadData();
+      return updated;
+    } catch (err: any) {
+      setPersistenceError(err.message || 'Failed to update account');
+      throw err;
+    }
+  };
+
+  const executeCommand = async (cmd: CreateFinancialEntryCommand) => {
+    try {
+      setPersistenceError(null);
+      const result = validateFinancialCommand(cmd, accounts);
+      if (!result.isValid || !result.builtEvent) {
+        throw new Error(result.errors.join(' '));
+      }
+      const created = await repository.addEvent(result.builtEvent);
+      await loadData();
+      return created;
+    } catch (err: any) {
+      setPersistenceError(err.message || 'Failed to execute financial command');
+      throw err;
+    }
   };
 
   const addEvent = async (eventData: Omit<FinancialEvent, 'id'>) => {
-    if (!Number.isSafeInteger(eventData.income_paise) || !Number.isSafeInteger(eventData.spending_paise)) {
-      throw new Error('Income and spending paise must be finite safe integers.');
+    try {
+      setPersistenceError(null);
+      if (!Number.isSafeInteger(eventData.income_paise) || !Number.isSafeInteger(eventData.spending_paise)) {
+        throw new Error('Income and spending paise must be finite safe integers.');
+      }
+      const created = await repository.addEvent(eventData);
+      await loadData();
+      return created;
+    } catch (err: any) {
+      setPersistenceError(err.message || 'Failed to add event');
+      throw err;
     }
-    const created = await repository.addEvent(eventData);
-    await loadData();
-    return created;
   };
 
   const updateEvent = async (id: string, updates: Partial<FinancialEvent>) => {
-    const updated = await repository.updateEvent(id, updates);
-    await loadData();
-    return updated;
+    try {
+      setPersistenceError(null);
+      const updated = await repository.updateEvent(id, updates);
+      await loadData();
+      return updated;
+    } catch (err: any) {
+      setPersistenceError(err.message || 'Failed to update event');
+      throw err;
+    }
   };
 
   const deleteEvent = async (id: string) => {
-    const deleted = await repository.deleteEvent(id);
-    await loadData();
-    return deleted;
+    try {
+      setPersistenceError(null);
+      const deleted = await repository.deleteEvent(id);
+      await loadData();
+      return deleted;
+    } catch (err: any) {
+      setPersistenceError(err.message || 'Failed to delete event');
+      throw err;
+    }
   };
 
   const commitImportBatch = async (
@@ -142,41 +235,74 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     newEvents: FinancialEvent[],
     updatedEvents: FinancialEvent[]
   ) => {
-    await repository.commitImportBatch(batch, newEvents, updatedEvents);
-    await loadData();
+    try {
+      setPersistenceError(null);
+      await repository.commitImportBatch(batch, newEvents, updatedEvents);
+      await loadData();
+    } catch (err: any) {
+      setPersistenceError(err.message || 'Failed to commit import batch');
+      throw err;
+    }
   };
 
   const undoImportBatch = async (batchId: string) => {
-    const success = await repository.undoImportBatch(batchId);
-    if (success) {
+    try {
+      setPersistenceError(null);
+      const success = await repository.undoImportBatch(batchId);
       await loadData();
+      return success;
+    } catch (err: any) {
+      setPersistenceError(err.message || 'Failed to undo import batch');
+      throw err;
     }
-    return success;
   };
 
   const addEmiPlan = async (emi: Omit<EmiPlan, 'id'>) => {
-    const created = await repository.addEmiPlan(emi);
-    await loadData();
-    return created;
+    try {
+      setPersistenceError(null);
+      const created = await repository.addEmiPlan(emi);
+      await loadData();
+      return created;
+    } catch (err: any) {
+      setPersistenceError(err.message || 'Failed to add EMI plan');
+      throw err;
+    }
   };
 
   const updatePlanningConfig = async (config: Partial<CashPlanningConfig>) => {
-    await repository.updatePlanningConfig(config);
-    await loadData();
+    try {
+      setPersistenceError(null);
+      const updated = await repository.updatePlanningConfig(config);
+      setPlanningConfig(updated);
+      await loadData();
+    } catch (err: any) {
+      setPersistenceError(err.message || 'Failed to update planning config');
+      throw err;
+    }
   };
 
   const addCategoryRule = async (rule: Omit<CategoryRule, 'id' | 'created_at' | 'match_count'>) => {
-    const created = await repository.addCategoryRule(rule);
-    await loadData();
-    return created;
+    try {
+      setPersistenceError(null);
+      const created = await repository.addCategoryRule(rule);
+      await loadData();
+      return created;
+    } catch (err: any) {
+      setPersistenceError(err.message || 'Failed to add category rule');
+      throw err;
+    }
   };
 
   const deleteCategoryRule = async (id: string) => {
-    const deleted = await repository.deleteCategoryRule(id);
-    if (deleted) {
+    try {
+      setPersistenceError(null);
+      const deleted = await repository.deleteCategoryRule(id);
       await loadData();
+      return deleted;
+    } catch (err: any) {
+      setPersistenceError(err.message || 'Failed to delete category rule');
+      throw err;
     }
-    return deleted;
   };
 
   const exportBackup = async () => {
@@ -184,18 +310,29 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const restoreBackup = async (jsonString: string) => {
-    const res = await repository.restoreBackup(jsonString);
-    await loadData();
-    return res;
+    try {
+      setPersistenceError(null);
+      const res = await repository.restoreBackup(jsonString);
+      await loadData();
+      return res;
+    } catch (err: any) {
+      setPersistenceError(err.message || 'Failed to restore backup');
+      throw err;
+    }
   };
 
   const resetToDemo = async () => {
-    setIsLoading(true);
-    await repository.resetToDemo();
-    setPeriod({
-      from: DEMO_FIXTURE.period.from,
-      through: DEMO_FIXTURE.period.through,
-    });
+    try {
+      setPersistenceError(null);
+      await repository.resetToDemo();
+      await loadData();
+    } catch (err: any) {
+      setPersistenceError(err.message || 'Failed to reset state');
+      throw err;
+    }
+  };
+
+  const refresh = async () => {
     await loadData();
   };
 
@@ -214,8 +351,12 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         period,
         setPeriod,
         isLoading,
-        executeCommand,
+        persistenceError,
+        clearPersistenceError,
+        addAccount,
+        updateAccount,
         addEvent,
+        executeCommand,
         updateEvent,
         deleteEvent,
         commitImportBatch,
@@ -227,7 +368,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         exportBackup,
         restoreBackup,
         resetToDemo,
-        refresh: loadData,
+        refresh,
       }}
     >
       {children}
@@ -235,10 +376,10 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   );
 };
 
-export function useLedger(): LedgerContextType {
+export const useLedger = (): LedgerContextType => {
   const context = useContext(LedgerContext);
   if (!context) {
     throw new Error('useLedger must be used within a LedgerProvider');
   }
   return context;
-}
+};

@@ -7,10 +7,13 @@ import {
   EmiPlan,
   CashPlanningConfig,
   CategoryRule,
+  CreateAccountData,
 } from '../domain/types';
 
 export interface LedgerRepository {
   getAccounts(): Promise<Account[]>;
+  addAccount(account: CreateAccountData): Promise<Account>;
+  updateAccount(id: string, updates: Partial<Account>): Promise<Account>;
   getEvents(options?: { fromDate?: string; throughDate?: string }): Promise<FinancialEvent[]>;
   getEventById(id: string): Promise<FinancialEvent | null>;
   addEvent(event: Omit<FinancialEvent, 'id'>): Promise<FinancialEvent>;

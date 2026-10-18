@@ -4,7 +4,6 @@ import { Sidebar, TabId } from './Sidebar';
 import { MobileNav } from './MobileNav';
 import { Modal } from '../ui/Modal';
 import { FileSpreadsheet, CreditCard, Bot, Settings } from 'lucide-react';
-import { MilestoneBadge } from '../common/MilestoneBadge';
 import { OfflineBanner } from '../common/OfflineBanner';
 
 export interface ShellProps {
@@ -54,8 +53,8 @@ export const Shell: React.FC<ShellProps> = ({
       <Modal
         isOpen={isMoreOpen}
         onClose={() => setIsMoreOpen(false)}
-        title="More Features"
-        description="Upcoming milestone roadmaps and integrations"
+        title="More Sections"
+        description="Navigate to specialized financial views and settings"
       >
         <div className="flex flex-col gap-2 pt-2">
           {moreItems.map((item) => {
@@ -81,10 +80,17 @@ export const Shell: React.FC<ShellProps> = ({
                   </div>
                   <div>
                     <p className="text-sm font-semibold">{item.label}</p>
-                    <p className="text-xs text-slate-500">{item.milestone} Completed</p>
+                    <p className="text-xs text-slate-500">
+                      {item.id === 'imports'
+                        ? 'Statements & Imports'
+                        : item.id === 'commitments'
+                        ? 'Credit Cards & EMIs'
+                        : item.id === 'assistant'
+                        ? 'AI Financial Assistant'
+                        : 'Preferences & Cloud Sync'}
+                    </p>
                   </div>
                 </div>
-                <MilestoneBadge milestone={item.milestone} status="live" />
               </button>
             );
           })}

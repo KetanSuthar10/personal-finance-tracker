@@ -9,7 +9,7 @@ Reviewed baseline: `552a527` (branch `main`).
 | T00 | VERIFIED | `d7c0a0e` / Windows 11 / Node v24.21.0 / npm 11.19.0 | [reports/T00.md](reports/T00.md) |
 | T01 | VERIFIED | `552a527` / Windows 11 / Node v24.21.0 / npm 11.19.0 | [reports/T01.md](reports/T01.md) |
 | T02 | VERIFIED | `97eed8e` / Windows 11 / Node v24.21.0 / npm 11.19.0 / Hosted Supabase | [reports/T02.md](reports/T02.md) |
-| T03 | NOT_STARTED | — | — |
+| T03 | VERIFIED | `65deb81` / Windows 11 / Node v24.21.0 / npm 11.19.0 / Remote Supabase | [reports/T03.md](reports/T03.md) |
 | T04 | NOT_STARTED | — | — |
 | T05 | NOT_STARTED | — | — |
 | T06 | NOT_STARTED | — | — |
@@ -32,4 +32,4 @@ Allowed states: NOT_STARTED, IN_PROGRESS, IMPLEMENTED_UNVERIFIED, VERIFIED, BLOC
 
 ## Next assigned task
 
-T03 (`docs/production/tasks/T03_AUTH_AND_SYNC.md`), awaiting user assignment.
+T04 (`docs/production/tasks/T04_TRANSACTIONS.md`), awaiting user assignment.

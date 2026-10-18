@@ -1,11 +1,28 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLedger } from '../../context/LedgerContext';
 import { AccountCard } from './AccountCard';
 import { MoneyDisplay } from '../../components/common/MoneyDisplay';
-import { Landmark, ShieldAlert } from 'lucide-react';
+import { Button } from '../../components/ui/Button';
+import { AddAccountModal } from './AddAccountModal';
+import { EditAccountModal } from './EditAccountModal';
+import { Account } from '../../domain/types';
+import { Landmark, ShieldAlert, Plus, WalletCards } from 'lucide-react';
 
 export const AccountsPage: React.FC = () => {
-  const { accounts, summary, isLoading } = useLedger();
+  const { accounts, statements, summary, isLoading } = useLedger();
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+
+  const latestStatementByAccount = React.useMemo(() => {
+    const map = new Map<string, string>();
+    for (const s of statements) {
+      const prev = map.get(s.account_id);
+      if (!prev || s.statement_date > prev) {
+        map.set(s.account_id, s.statement_date);
+      }
+    }
+    return map;
+  }, [statements]);
 
   if (isLoading || !summary) {
     return (
@@ -37,42 +54,98 @@ export const AccountsPage: React.FC = () => {
             <span className="text-[11px] font-medium text-slate-400 block uppercase">Card Liabilities</span>
             <MoneyDisplay paise={summary.card_outstanding_paise} size="md" variant="danger" />
           </div>
+          <Button
+            size="sm"
+            onClick={() => setIsAddModalOpen(true)}
+            className="shadow-sm"
+          >
+            <Plus className="w-4 h-4 mr-1" />
+            <span>Add Account</span>
+          </Button>
         </div>
       </div>
 
-      {/* Asset Accounts Grid */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Landmark className="w-4 h-4 text-indigo-600" />
-          <h3 className="text-sm font-semibold text-slate-800">Liquid Accounts (Bank & Cash)</h3>
+      {/* Empty State when no accounts exist yet (F18) */}
+      {accounts.length === 0 ? (
+        <div className="p-8 sm:p-12 text-center rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4 max-w-lg mx-auto my-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 mb-1">
+            <WalletCards className="w-7 h-7" />
+          </div>
+          <h3 className="text-base font-bold text-slate-900">No accounts configured yet</h3>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            Your personal finance tracker starts empty. Configure your primary bank account, cash wallet, or credit card to begin recording financial entries.
+          </p>
+          <Button
+            size="sm"
+            onClick={() => setIsAddModalOpen(true)}
+            className="shadow-sm mt-2"
+          >
+            <Plus className="w-4 h-4 mr-1" />
+            <span>Set Up First Account</span>
+          </Button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {assetAccounts.map((acc) => (
-            <AccountCard
-              key={acc.id}
-              account={acc}
-              closingPositionPaise={summary.closing_positions_paise[acc.id] ?? 0}
-            />
-          ))}
-        </div>
-      </div>
+      ) : (
+        <>
+          {/* Asset Accounts Grid */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Landmark className="w-4 h-4 text-indigo-600" />
+              <h3 className="text-sm font-semibold text-slate-800">Liquid Accounts (Bank & Cash)</h3>
+            </div>
+            {assetAccounts.length === 0 ? (
+              <p className="text-xs text-slate-400 italic py-2">No liquid asset accounts configured.</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {assetAccounts.map((acc) => (
+                  <AccountCard
+                    key={acc.id}
+                    account={acc}
+                    closingPositionPaise={summary.closing_positions_paise[acc.id] ?? 0}
+                    latestStatementDate={latestStatementByAccount.get(acc.id)}
+                    onEdit={(a) => setEditingAccount(a)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
 
-      {/* Credit Card Accounts Grid */}
-      <div className="space-y-3 pt-2">
-        <div className="flex items-center gap-2">
-          <ShieldAlert className="w-4 h-4 text-amber-600" />
-          <h3 className="text-sm font-semibold text-slate-800">Credit Cards & Liabilities</h3>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {cardAccounts.map((acc) => (
-            <AccountCard
-              key={acc.id}
-              account={acc}
-              closingPositionPaise={summary.closing_positions_paise[acc.id] ?? 0}
-            />
-          ))}
-        </div>
-      </div>
+          {/* Credit Card Accounts Grid */}
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-amber-600" />
+              <h3 className="text-sm font-semibold text-slate-800">Credit Cards & Liabilities</h3>
+            </div>
+            {cardAccounts.length === 0 ? (
+              <p className="text-xs text-slate-400 italic py-2">No credit card accounts configured.</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {cardAccounts.map((acc) => (
+                  <AccountCard
+                    key={acc.id}
+                    account={acc}
+                    closingPositionPaise={summary.closing_positions_paise[acc.id] ?? 0}
+                    latestStatementDate={latestStatementByAccount.get(acc.id)}
+                    onEdit={(a) => setEditingAccount(a)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Add Account Modal */}
+      <AddAccountModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+      />
+
+      {/* Edit Account Modal */}
+      <EditAccountModal
+        isOpen={editingAccount !== null}
+        onClose={() => setEditingAccount(null)}
+        account={editingAccount}
+      />
     </div>
   );
 };

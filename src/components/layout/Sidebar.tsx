@@ -10,7 +10,6 @@ import {
   LogOut,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { MilestoneBadge } from '../common/MilestoneBadge';
 import { useAuth } from '../../context/AuthContext';
 
 export type TabId = 'overview' | 'accounts' | 'transactions' | 'imports' | 'commitments' | 'assistant' | 'settings';
@@ -63,7 +62,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
                 />
                 <span>{item.label}</span>
               </div>
-              <MilestoneBadge milestone={item.milestone} status={item.status} />
             </button>
           );
         })}
@@ -73,15 +71,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
         {user && (
           <div className="rounded-xl bg-white p-3 border border-slate-200/60 shadow-xs">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
-                Owner Session
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Live Sync Active
               </span>
               <button
                 type="button"
                 id="sidebar-signout-btn"
                 onClick={() => signOut()}
                 title="Sign out of your session"
-                className="text-slate-400 hover:text-rose-600 transition-colors p-1 rounded-md hover:bg-rose-50"
+                className="text-slate-400 hover:text-rose-600 transition-colors p-1 rounded-md hover:bg-rose-50 cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" />
               </button>
@@ -89,18 +88,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
             <p className="text-xs font-semibold text-slate-800 truncate" title={user.email || ''}>
               {user.email || 'Owner'}
             </p>
-            <p className="text-[10px] font-mono text-slate-400 truncate">
-              {user.id}
+            <p className="text-[10px] text-slate-400 mt-0.5 flex items-center justify-between">
+              <span>PostgreSQL Cloud</span>
+              <span className="font-mono text-[9px] text-slate-400">Asia/Kolkata</span>
             </p>
           </div>
         )}
-
-        <div className="rounded-xl bg-white p-3 border border-slate-200/60 shadow-xs">
-          <p className="text-xs font-semibold text-slate-800">INR Integer Paise</p>
-          <p className="text-[11px] text-slate-500 mt-0.5">
-            Strict integer math for accounting invariants. Zero rounding errors.
-          </p>
-        </div>
       </div>
     </aside>
   );
