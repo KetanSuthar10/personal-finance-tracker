@@ -105,21 +105,33 @@ export function calculateCashPlanning(
   }
 
   // 2. Sum upcoming EMI instalments due within horizon, DEDUPLICATING against billed statements
+  // Generates all unpaid instalments within requested planning horizon up to remaining tenure
   let standalone_emis_due_paise = 0;
   let deduplicated_emis_count = 0;
 
   for (const emi of emiPlans) {
     if (emi.status !== 'active') continue;
 
-    if (emi.next_due_date <= horizonDateStr) {
-      // DEDUPLICATION INVARIANT:
-      // If this EMI is linked to a card statement bill that is already included in card_bills_due_paise,
-      // skip adding it to avoid double-counting!
-      if (emi.billed_in_statement_id && billedStatementIds.has(emi.billed_in_statement_id)) {
+    const remainingInstalments = emi.total_tenure_months - emi.instalments_billed;
+    if (remainingInstalments <= 0) continue;
+
+    let instalmentCount = 0;
+    const dueDate = new Date(emi.next_due_date);
+
+    while (instalmentCount < remainingInstalments) {
+      const dueDateStr = dueDate.toISOString().slice(0, 10);
+      if (dueDateStr > horizonDateStr) break;
+
+      // Only the first upcoming instalment might be billed in the statement
+      if (instalmentCount === 0 && emi.billed_in_statement_id && billedStatementIds.has(emi.billed_in_statement_id)) {
         deduplicated_emis_count++;
       } else {
         standalone_emis_due_paise += emi.monthly_instalment_paise;
       }
+
+      // Advance by 1 month for subsequent instalments
+      dueDate.setMonth(dueDate.getMonth() + 1);
+      instalmentCount++;
     }
   }
 

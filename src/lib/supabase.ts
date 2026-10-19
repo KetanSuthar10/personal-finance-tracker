@@ -1,21 +1,63 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const DEFAULT_SUPABASE_URL = 'https://mpjjetxtpekrxeyivlkv.supabase.co';
-const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_k9lCl5klWC5Xlz4omL6TIQ_g7Jr5Cns';
+export interface SupabaseConfigValidation {
+  isValid: boolean;
+  error?: string;
+  url?: string;
+  key?: string;
+}
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
+export function validateSupabaseConfig(rawUrl?: string, rawKey?: string): SupabaseConfigValidation {
+  if (!rawUrl || !rawKey) {
+    return {
+      isValid: false,
+      error: 'Supabase URL and Key are not configured in environment variables.',
+    };
+  }
 
-export const isSupabaseConfigured = Boolean(
-  supabaseUrl && 
-  supabaseAnonKey && 
-  supabaseUrl.startsWith('https://') &&
-  !supabaseUrl.includes('your-project')
-);
+  const url = rawUrl.trim();
+  const key = rawKey.trim();
 
+  if (!url.startsWith('https://')) {
+    return {
+      isValid: false,
+      error: 'Supabase URL must use HTTPS.',
+    };
+  }
+
+  if (url.includes('your-project') || url.includes('placeholder-unconfigured')) {
+    return {
+      isValid: false,
+      error: 'Supabase URL contains a placeholder value. Please supply your real project URL.',
+    };
+  }
+
+  if (key.length < 10 || key.includes('your-publishable') || key.includes('placeholder')) {
+    return {
+      isValid: false,
+      error: 'Supabase Key contains a placeholder value. Please supply your real publishable/anon key.',
+    };
+  }
+
+  return {
+    isValid: true,
+    url,
+    key,
+  };
+}
+
+// Canonical variable is VITE_SUPABASE_PUBLISHABLE_KEY; fallback to VITE_SUPABASE_ANON_KEY for compatibility
+const envUrl = import.meta.env.VITE_SUPABASE_URL;
+const envKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+export const supabaseConfigValidation = validateSupabaseConfig(envUrl, envKey);
+export const isSupabaseConfigured = supabaseConfigValidation.isValid;
+
+// When configured, instantiate client with verified credentials.
+// When unconfigured, provide a non-throwing stub client with safe mock values to prevent module evaluation crashes.
 export const supabase: SupabaseClient = createClient(
-  supabaseUrl,
-  supabaseAnonKey,
+  isSupabaseConfigured && supabaseConfigValidation.url ? supabaseConfigValidation.url : 'https://placeholder-unconfigured.supabase.co',
+  isSupabaseConfigured && supabaseConfigValidation.key ? supabaseConfigValidation.key : 'placeholder-anon-key',
   {
     auth: {
       persistSession: true,
@@ -25,3 +67,4 @@ export const supabase: SupabaseClient = createClient(
     },
   }
 );
+

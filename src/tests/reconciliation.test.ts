@@ -135,4 +135,57 @@ describe('statement reconciliation and deduplication', () => {
     // And batch observation was removed from cafe
     expect(cafeEvent?.source_observations?.length).toBe(0);
   });
+
+  it('does not merge multiple import rows into a single existing transaction (preserves distinct purchases)', () => {
+    // Two rows with identical amount (₹120) and date, both from Cafe
+    const twoCoffeeRows: RawCsvRow[] = [
+      {
+        date: '2026-10-03',
+        description: 'SAMPLE CAFE MORNING',
+        ref_no: 'TXN-A1',
+        debit_paise: 12000,
+        credit_paise: 0,
+        delta_paise: -12000,
+      },
+      {
+        date: '2026-10-03',
+        description: 'SAMPLE CAFE EVENING',
+        ref_no: 'TXN-A2',
+        debit_paise: 12000,
+        credit_paise: 0,
+        delta_paise: -12000,
+      },
+    ];
+
+    const candidates = reconcileImportCandidates(bankAccount, existingEvents, twoCoffeeRows);
+
+    // Row 1 matches the existing cafe entry
+    expect(candidates[0].match_status).toBe('EXACT_MATCH');
+    expect(candidates[0].matched_event_id).toBe('cafe');
+
+    // Row 2 MUST NOT match 'cafe' again! It must be treated as a NEW_RECORD
+    expect(candidates[1].match_status).toBe('NEW_RECORD');
+    expect(candidates[1].matched_event_id).toBeUndefined();
+  });
+
+  it('flags transactions with identical amounts but distinct merchant names as UNCERTAIN_MATCH instead of auto-merging', () => {
+    // Row on 2026-10-03 for ₹120, but from an unrelated merchant (PHARMACY)
+    const pharmacyRow: RawCsvRow[] = [
+      {
+        date: '2026-10-03',
+        description: 'APOLLO PHARMACY NEW DELHI',
+        ref_no: 'TXN-PHARM-99',
+        debit_paise: 12000,
+        credit_paise: 0,
+        delta_paise: -12000,
+      },
+    ];
+
+    const candidates = reconcileImportCandidates(bankAccount, existingEvents, pharmacyRow);
+
+    // Must NOT be EXACT_MATCH with cafe! Must be UNCERTAIN_MATCH for review queue
+    expect(candidates[0].match_status).toBe('UNCERTAIN_MATCH');
+    expect(candidates[0].matched_event_id).toBeUndefined();
+    expect(candidates[0].confidence_reason).toContain('merchant description differs');
+  });
 });

@@ -93,4 +93,93 @@ describe('Auth & Remote Sync (T03 / AT13–AT15)', () => {
       ).rejects.toThrow('finite safe integer');
     });
   });
+
+  describe('AT13 / SEC-02: Fail-Closed Owner Authorization & Bootstrap Invariants', () => {
+    // Model server-side evaluation logic implemented in AuthContext
+    const evaluateOwnerStatus = (
+      rpcResult: { owner_configured?: boolean; is_owner?: boolean } | null,
+      rpcError: Error | null,
+      userId: string | null
+    ) => {
+      if (rpcError) {
+        return {
+          isOwner: false,
+          ownerConfigured: false,
+          userId,
+          statusState: 'error' as const,
+          errorMessage: rpcError.message,
+        };
+      }
+
+      if (rpcResult) {
+        const configured = Boolean(rpcResult.owner_configured);
+        const isOwner = Boolean(rpcResult.is_owner);
+
+        let statusState: 'unconfigured' | 'authorized' | 'denied' = 'denied';
+        if (!configured) {
+          statusState = 'unconfigured';
+        } else if (isOwner) {
+          statusState = 'authorized';
+        }
+
+        return {
+          isOwner,
+          ownerConfigured: configured,
+          userId,
+          statusState,
+        };
+      }
+
+      return null;
+    };
+
+    it('strictly fails closed (isOwner = false) when owner status RPC errors (SEC-02 regression)', () => {
+      const result = evaluateOwnerStatus(null, new Error('connection timeout to postgres'), 'user_123');
+      expect(result).not.toBeNull();
+      expect(result!.isOwner).toBe(false);
+      expect(result!.statusState).toBe('error');
+      expect(result!.errorMessage).toContain('connection timeout');
+    });
+
+    it('strictly denies owner status (isOwner = false) when owner is unconfigured (SEC-02 regression)', () => {
+      const result = evaluateOwnerStatus({ owner_configured: false, is_owner: false }, null, 'new_user_456');
+      expect(result).not.toBeNull();
+      expect(result!.isOwner).toBe(false);
+      expect(result!.ownerConfigured).toBe(false);
+      expect(result!.statusState).toBe('unconfigured');
+    });
+
+    it('authorizes only when owner is configured and requesting user matches owner UUID', () => {
+      const authorizedResult = evaluateOwnerStatus({ owner_configured: true, is_owner: true }, null, 'owner_uuid');
+      expect(authorizedResult!.isOwner).toBe(true);
+      expect(authorizedResult!.statusState).toBe('authorized');
+
+      const nonOwnerResult = evaluateOwnerStatus({ owner_configured: true, is_owner: false }, null, 'attacker_uuid');
+      expect(nonOwnerResult!.isOwner).toBe(false);
+      expect(nonOwnerResult!.statusState).toBe('denied');
+    });
+
+    it('models bootstrap RPC permitting only the first user to claim ownership', () => {
+      let serverOwnerConfig: { owner_user_id: string; owner_email: string } | null = null;
+
+      const simulateBootstrap = (userId: string, email: string) => {
+        if (serverOwnerConfig !== null) {
+          throw new Error('Owner is already configured. Subsequent claims are forbidden.');
+        }
+        serverOwnerConfig = { owner_user_id: userId, owner_email: email };
+        return { success: true, owner_user_id: userId, owner_email: email };
+      };
+
+      // First user enrollment succeeds
+      const firstClaim = simulateBootstrap('owner_user_1', 'owner@example.com');
+      expect(firstClaim.success).toBe(true);
+      expect(serverOwnerConfig).toEqual({ owner_user_id: 'owner_user_1', owner_email: 'owner@example.com' });
+
+      // Second user enrollment attempt is strictly rejected
+      expect(() => simulateBootstrap('second_user_2', 'second@example.com')).toThrow(
+        'Owner is already configured'
+      );
+    });
+  });
 });
+

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { isSupabaseConfigured, supabase, validateSupabaseConfig } from '../lib/supabase';
 import { CreateFinancialEntryCommand, validateFinancialCommand } from '../domain/commandService';
 
 describe('Database & Auth Security Boundaries (T02 / AT13 & AT15)', () => {
@@ -10,11 +10,27 @@ describe('Database & Auth Security Boundaries (T02 / AT13 & AT15)', () => {
       expect(supabase.auth).toBeDefined();
     });
 
-    it('exposes only public/anon key and never contains a service_role secret in client code', () => {
+    it('strictly validates configuration and rejects placeholders and non-HTTPS URLs', () => {
+      // Rejects empty/missing
+      expect(validateSupabaseConfig(undefined, undefined).isValid).toBe(false);
+      expect(validateSupabaseConfig('', '').isValid).toBe(false);
+
+      // Rejects non-HTTPS
+      expect(validateSupabaseConfig('http://my-project.supabase.co', 'valid-key-1234567890').isValid).toBe(false);
+
+      // Rejects placeholders
+      expect(validateSupabaseConfig('https://your-project.supabase.co', 'sb_publishable_k9lCl5klWC5Xlz4omL6TIQ_g7Jr5Cns').isValid).toBe(false);
+      expect(validateSupabaseConfig('https://valid.supabase.co', 'your-publishable-key').isValid).toBe(false);
+
+      // Accepts valid HTTPS URL and key
+      const valid = validateSupabaseConfig('https://abc123xyz.supabase.co', 'sb_publishable_validkey12345');
+      expect(valid.isValid).toBe(true);
+      expect(valid.url).toBe('https://abc123xyz.supabase.co');
+      expect(valid.key).toBe('sb_publishable_validkey12345');
+    });
+
+    it('never contains a service_role secret in client code', () => {
       // In Vite/React frontend, service-role keys must never be exposed or requested
-      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      expect(anonKey).toBeDefined();
-      // Ensure no secret key name is bundled
       expect((import.meta.env as any).SUPABASE_SERVICE_ROLE_KEY).toBeUndefined();
       expect((import.meta.env as any).VITE_SUPABASE_SERVICE_ROLE_KEY).toBeUndefined();
     });

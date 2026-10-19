@@ -49,14 +49,8 @@ export const AssistantPage: React.FC = () => {
   const [input, setInput] = useState('');
   const [isThinking, setIsThinking] = useState(false);
 
-  // Configuration state
-  const [apiKey, setApiKey] = useState<string>(() => {
-    try {
-      return sessionStorage.getItem('pft_gemini_key') || '';
-    } catch {
-      return '';
-    }
-  });
+  // Configuration state: In-memory only for optional evaluation; never persisted to browser storage
+  const [apiKey, setApiKey] = useState<string>('');
   const [model, setModel] = useState<string>('gemini-1.5-flash');
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isRulesOpen, setIsRulesOpen] = useState(false);
@@ -73,11 +67,6 @@ export const AssistantPage: React.FC = () => {
 
   const handleSaveApiKey = (key: string) => {
     setApiKey(key);
-    try {
-      sessionStorage.setItem('pft_gemini_key', key);
-    } catch {
-      // Ignore
-    }
   };
 
   const handleSendMessage = async (textToSend?: string) => {

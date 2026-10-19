@@ -2,10 +2,14 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
+export type OwnerStatusState = 'loading' | 'unconfigured' | 'authorized' | 'denied' | 'error';
+
 export interface UserOwnerStatus {
   isOwner: boolean;
   ownerConfigured: boolean;
   userId: string | null;
+  statusState: OwnerStatusState;
+  errorMessage?: string;
 }
 
 interface AuthContextType {
@@ -15,10 +19,15 @@ interface AuthContextType {
   error: string | null;
   ownerStatus: UserOwnerStatus | null;
   isConfigured: boolean;
+  isPasswordRecovery: boolean;
+  clearPasswordRecovery: () => void;
   signInWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signUpWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null; user: User | null }>;
+  sendPasswordResetEmail: (email: string) => Promise<{ error: AuthError | null }>;
+  updatePassword: (newPassword: string) => Promise<{ error: AuthError | null }>;
   signInWithGoogle: () => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<{ error: AuthError | null }>;
+  bootstrapOwner: () => Promise<{ error: Error | null; success: boolean }>;
   clearError: () => void;
   checkOwnerStatus: () => Promise<UserOwnerStatus | null>;
 }
@@ -31,48 +40,65 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [ownerStatus, setOwnerStatus] = useState<UserOwnerStatus | null>(null);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   const checkOwnerStatus = useCallback(async (): Promise<UserOwnerStatus | null> => {
     if (!isSupabaseConfigured || !user) {
       setOwnerStatus(null);
       return null;
     }
+
     try {
-      // Query the server-side status RPC if it exists, or check app_owner_config
+      // Query the server-side status RPC
       const { data, error: rpcError } = await supabase.rpc('get_current_user_status');
+      
       if (rpcError) {
-        // Fallback: check app_owner_config directly
-        const { data: ownerRows, error: ownerError } = await supabase
-          .from('app_owner_config')
-          .select('owner_user_id')
-          .limit(1);
-
-        if (ownerError) {
-          // Table may not exist yet if migrations haven't run
-          const status = { isOwner: true, ownerConfigured: false, userId: user.id };
-          setOwnerStatus(status);
-          return status;
-        }
-
-        const configured = ownerRows && ownerRows.length > 0;
-        const isOwner = configured && ownerRows[0].owner_user_id === user.id;
-        const status = { isOwner: !configured || isOwner, ownerConfigured: configured, userId: user.id };
+        console.error('Owner status verification failed (RPC error):', rpcError.message);
+        // Under strict fail-closed security rules: an RPC error must NEVER grant owner access
+        const status: UserOwnerStatus = {
+          isOwner: false,
+          ownerConfigured: false,
+          userId: user.id,
+          statusState: 'error',
+          errorMessage: rpcError.message,
+        };
         setOwnerStatus(status);
         return status;
       }
 
       if (data) {
-        const status = {
-          isOwner: Boolean(data.is_owner),
-          ownerConfigured: Boolean(data.owner_configured),
+        const configured = Boolean(data.owner_configured);
+        const isOwner = Boolean(data.is_owner);
+
+        let statusState: OwnerStatusState = 'denied';
+        if (!configured) {
+          statusState = 'unconfigured';
+        } else if (isOwner) {
+          statusState = 'authorized';
+        }
+
+        const status: UserOwnerStatus = {
+          isOwner,
+          ownerConfigured: configured,
           userId: user.id,
+          statusState,
         };
         setOwnerStatus(status);
         return status;
       }
     } catch (err: any) {
-      console.warn('Could not verify owner status:', err.message);
+      console.error('Exception during owner verification:', err?.message);
+      const status: UserOwnerStatus = {
+        isOwner: false,
+        ownerConfigured: false,
+        userId: user.id,
+        statusState: 'error',
+        errorMessage: err?.message || 'Verification exception',
+      };
+      setOwnerStatus(status);
+      return status;
     }
+
     return null;
   }, [user]);
 
@@ -99,11 +125,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
     });
 
-    // 2. Listen to ongoing auth state changes (sign in, sign out, token refresh, OAuth callback)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+    // 2. Listen to ongoing auth state changes (sign in, sign out, token refresh, OAuth callback, password recovery)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
       if (!isMounted) return;
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
+
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsPasswordRecovery(true);
+      } else if (event === 'SIGNED_OUT') {
+        setIsPasswordRecovery(false);
+        setOwnerStatus(null);
+      }
+
       setIsLoading(false);
     });
 
@@ -159,6 +193,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const sendPasswordResetEmail = async (email: string) => {
+    setError(null);
+    try {
+      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}` : undefined;
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo,
+      });
+      if (resetError) {
+        setError(resetError.message);
+        return { error: resetError };
+      }
+      return { error: null };
+    } catch (err: any) {
+      const msg = err.message || 'Failed to send password reset email';
+      setError(msg);
+      return { error: err };
+    }
+  };
+
+  const updatePassword = async (newPassword: string) => {
+    setError(null);
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+      if (updateError) {
+        setError(updateError.message);
+        return { error: updateError };
+      }
+      setIsPasswordRecovery(false);
+      return { error: null };
+    } catch (err: any) {
+      const msg = err.message || 'Failed to update password';
+      setError(msg);
+      return { error: err };
+    }
+  };
+
   const signInWithGoogle = async () => {
     setError(null);
     try {
@@ -192,6 +264,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const bootstrapOwner = async (): Promise<{ error: Error | null; success: boolean }> => {
+    if (!user) return { error: new Error('User not authenticated'), success: false };
+    try {
+      const { data, error: rpcError } = await supabase.rpc('bootstrap_app_owner');
+      if (rpcError) {
+        return { error: new Error(rpcError.message), success: false };
+      }
+      if (data && data.success) {
+        await checkOwnerStatus();
+        return { error: null, success: true };
+      }
+      return { error: new Error('Bootstrap did not return success'), success: false };
+    } catch (err: any) {
+      return { error: err, success: false };
+    }
+  };
+
   const signOut = async () => {
     setError(null);
     try {
@@ -203,6 +292,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
       setSession(null);
       setOwnerStatus(null);
+      setIsPasswordRecovery(false);
       return { error: null };
     } catch (err: any) {
       const msg = err.message || 'Failed to sign out';
@@ -212,6 +302,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const clearError = () => setError(null);
+  const clearPasswordRecovery = () => setIsPasswordRecovery(false);
 
   return (
     <AuthContext.Provider
@@ -222,10 +313,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         error,
         ownerStatus,
         isConfigured: isSupabaseConfigured,
+        isPasswordRecovery,
+        clearPasswordRecovery,
         signInWithEmail,
         signUpWithEmail,
+        sendPasswordResetEmail,
+        updatePassword,
         signInWithGoogle,
         signOut,
+        bootstrapOwner,
         clearError,
         checkOwnerStatus,
       }}
@@ -242,3 +338,4 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
+

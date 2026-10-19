@@ -283,26 +283,35 @@ export const SettingsPage: React.FC = () => {
             )}
           </div>
 
-          {/* Local Ledger Reset Action */}
+          {/* Ledger Reset Action / Mode Display */}
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-slate-900 text-sm">Local State & Fixture Reset</span>
+                <span className="font-semibold text-slate-900 text-sm">
+                  {user && isConfigured ? 'Cloud Persistence Mode' : 'Local State & Fixture Reset'}
+                </span>
+                <Badge variant={user && isConfigured ? 'indigo' : 'neutral'} size="sm">
+                  {user && isConfigured ? 'Cloud Mode' : 'Local / Demo'}
+                </Badge>
               </div>
               <p className="text-[11px] text-slate-500 mt-0.5">
-                Financial records use strict integer paise arithmetic. Resetting reinstates the bundled demo fixture.
+                {user && isConfigured
+                  ? 'All financial mutations are authenticated and atomically persisted to your Supabase PostgreSQL ledger. Demo reset is disabled to safeguard live data.'
+                  : 'Financial records use strict integer paise arithmetic. Resetting reinstates the bundled demo fixture.'}
               </p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={resetToDemo}
-              isLoading={isLoading}
-              className="text-slate-600 self-start sm:self-auto"
-            >
-              <RotateCcw className="w-3.5 h-3.5 mr-1" />
-              Reset Demo State
-            </Button>
+            {(!user || !isConfigured) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={resetToDemo}
+                isLoading={isLoading}
+                className="text-slate-600 self-start sm:self-auto"
+              >
+                <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                Reset Demo State
+              </Button>
+            )}
           </div>
 
           {/* Production Migration Roadmap */}

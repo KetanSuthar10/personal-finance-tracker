@@ -72,6 +72,23 @@ export function inferCategoryAndType(
 }
 
 /**
+ * Checks whether an imported description and an existing event recipient are plausibly the same merchant.
+ * Prevents accidental merging of distinct purchases based solely on equal amounts and dates.
+ */
+function areDescriptionsCompatible(importedDesc: string, existingRecipient: string): boolean {
+  const norm1 = importedDesc.toUpperCase().replace(/[^A-Z0-9\s]/g, ' ');
+  const norm2 = existingRecipient.toUpperCase().replace(/[^A-Z0-9\s]/g, ' ');
+
+  if (norm1.includes(norm2) || norm2.includes(norm1)) return true;
+
+  const stopWords = new Set(['THE', 'AND', 'FOR', 'WITH', 'NEW', 'DELHI', 'INDIA', 'POS', 'UPI', 'NEFT', 'SAMPLE']);
+  const words1 = norm1.split(/\s+/).filter((w) => w.length >= 3 && !stopWords.has(w));
+  const words2 = norm2.split(/\s+/).filter((w) => w.length >= 3 && !stopWords.has(w));
+
+  return words1.some((w) => words2.includes(w));
+}
+
+/**
  * Evaluates raw imported rows against existing ledger events to identify duplicates,
  * matches with manual daily entries, and genuine new records.
  */
@@ -81,6 +98,7 @@ export function reconcileImportCandidates(
   rawRows: RawCsvRow[]
 ): ImportRowCandidate[] {
   const candidates: ImportRowCandidate[] = [];
+  const claimedEventIds = new Set<string>();
 
   for (let i = 0; i < rawRows.length; i++) {
     const row = rawRows[i];
@@ -126,8 +144,9 @@ export function reconcileImportCandidates(
     }
 
     // Look for matching existing events (e.g. manual daily entries)
-    // Criteria: same account delta and date proximity
+    // Filter out events already claimed by an earlier row in this import batch
     const potentialMatches = existingEvents.filter((e) => {
+      if (claimedEventIds.has(e.id)) return false;
       const posting = e.postings.find((p) => p.account_id === account.id);
       if (!posting) return false;
       return posting.delta_paise === expectedDeltaPaise;
@@ -143,20 +162,40 @@ export function reconcileImportCandidates(
 
     if (closeMatches.length === 1) {
       const matched = closeMatches[0];
-      candidates.push({
-        row_index: i,
-        date: row.date,
-        description: row.description,
-        ref_no: row.ref_no,
-        debit_paise: row.debit_paise,
-        credit_paise: row.credit_paise,
-        delta_paise: expectedDeltaPaise,
-        inferred_type: matched.type,
-        inferred_category: matched.category,
-        match_status: 'EXACT_MATCH',
-        matched_event_id: matched.id,
-        confidence_reason: `Reconciles with existing manual entry "${matched.recipient}" (${matched.date})`,
-      });
+      const isCompatible = areDescriptionsCompatible(row.description, matched.recipient);
+
+      if (isCompatible) {
+        candidates.push({
+          row_index: i,
+          date: row.date,
+          description: row.description,
+          ref_no: row.ref_no,
+          debit_paise: row.debit_paise,
+          credit_paise: row.credit_paise,
+          delta_paise: expectedDeltaPaise,
+          inferred_type: matched.type,
+          inferred_category: matched.category,
+          match_status: 'EXACT_MATCH',
+          matched_event_id: matched.id,
+          confidence_reason: `Reconciles with existing manual entry "${matched.recipient}" (${matched.date})`,
+        });
+        claimedEventIds.add(matched.id);
+      } else {
+        // Discrepancy in merchant descriptions: place in review queue rather than silently merging
+        candidates.push({
+          row_index: i,
+          date: row.date,
+          description: row.description,
+          ref_no: row.ref_no,
+          debit_paise: row.debit_paise,
+          credit_paise: row.credit_paise,
+          delta_paise: expectedDeltaPaise,
+          inferred_type: inferred.type,
+          inferred_category: inferred.category,
+          match_status: 'UNCERTAIN_MATCH',
+          confidence_reason: `Identical amount within 3 days of "${matched.recipient}", but merchant description differs; flagged for review to prevent accidental merge`,
+        });
+      }
     } else if (closeMatches.length > 1) {
       candidates.push({
         row_index: i,

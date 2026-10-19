@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { WifiOff, Wifi } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { isSupabaseConfigured } from '../../lib/supabase';
 
 export const OfflineBanner: React.FC = () => {
+  const { user } = useAuth();
+  const isCloudMode = Boolean(user && isSupabaseConfigured);
+
   const [isOnline, setIsOnline] = useState<boolean>(() => {
     return typeof navigator !== 'undefined' ? navigator.onLine : true;
   });
@@ -35,7 +40,11 @@ export const OfflineBanner: React.FC = () => {
     return (
       <div className="bg-emerald-600 text-white text-xs px-4 py-1.5 flex items-center justify-center gap-2 shadow-sm transition-all animate-fade-in z-50">
         <Wifi className="w-3.5 h-3.5" />
-        <span>Connected back online. Local records synchronized.</span>
+        <span>
+          {isCloudMode
+            ? 'Connected back online. Cloud synchronization active.'
+            : 'Connected back online.'}
+        </span>
       </div>
     );
   }
@@ -43,7 +52,12 @@ export const OfflineBanner: React.FC = () => {
   return (
     <div className="bg-amber-600 text-white text-xs px-4 py-1.5 flex items-center justify-center gap-2 shadow-sm transition-all z-50">
       <WifiOff className="w-3.5 h-3.5" />
-      <span>Offline Mode — All records and captures are safely saved to your local browser storage.</span>
+      <span>
+        {isCloudMode
+          ? 'Offline Mode — Internet connection lost. Cloud writes paused until connection is restored.'
+          : 'Offline Mode — Operating in local browser mode.'}
+      </span>
     </div>
   );
 };
+

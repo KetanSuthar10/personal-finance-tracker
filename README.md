@@ -51,3 +51,10 @@ The application will start at `http://127.0.0.1:5173/` or `http://localhost:5173
 | [docs/PRD.md](docs/PRD.md) | Product scope, user journeys, and acceptance criteria |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | Confirmed choices and architectural reconciliations |
 | [docs/production/04_ACCEPTANCE_TESTS.md](docs/production/04_ACCEPTANCE_TESTS.md) | Independent acceptance tests and invariant scenarios |
+| [docs/rebuild/DEPLOYMENT_GUIDE.md](docs/rebuild/DEPLOYMENT_GUIDE.md) | **Step-by-step Supabase new project setup, migration, and Vercel guide** |
+| [docs/rebuild/BASELINE_AUDIT.md](docs/rebuild/BASELINE_AUDIT.md) | Complete baseline audit, source mapping, and diagnostic inventory |
+| [docs/rebuild/SECURITY_FINDINGS.md](docs/rebuild/SECURITY_FINDINGS.md) | Vulnerability analysis and resolution ledger (SEC-01 through SEC-07) |
+| [docs/rebuild/IMPLEMENTATION_PLAN.md](docs/rebuild/IMPLEMENTATION_PLAN.md) | 8-phase recovery and rebuild roadmap |
+| [docs/rebuild/TEST_RESULTS.md](docs/rebuild/TEST_RESULTS.md) | Post-rebuild automated test report (95 tests passing, zero leaks) |
+| [docs/rebuild/CHANGELOG.md](docs/rebuild/CHANGELOG.md) | Detailed rebuild changelog and architectural decisions |
+

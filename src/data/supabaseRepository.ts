@@ -346,34 +346,42 @@ export class SupabaseLedgerRepository implements LedgerRepository {
     newEvents: FinancialEvent[],
     updatedEvents: FinancialEvent[]
   ): Promise<void> {
-    const userId = await this.getUserId();
+    await this.getUserId();
 
-    // 1. Insert events and postings
-    for (const evt of newEvents) {
-      await this.addEvent(evt);
-    }
+    const payloadBatch = {
+      id: batch.id,
+      filename: batch.filename,
+      account_id: batch.account_id,
+      row_count: batch.row_count,
+    };
 
-    for (const evt of updatedEvents) {
-      await this.updateEvent(evt.id, evt);
-    }
+    const payloadNewEvents = newEvents.map((evt) => ({
+      id: evt.id,
+      date: evt.date,
+      type: evt.type,
+      recipient: evt.recipient,
+      category: evt.category,
+      income_paise: evt.income_paise,
+      spending_paise: evt.spending_paise,
+      notes: evt.notes,
+      postings: evt.postings,
+      source: evt.source_observations?.[0] || null,
+    }));
 
-    // 2. Insert batch record
-    const { error } = await supabase
-      .from('import_batches')
-      .insert({
-        id: batch.id,
-        user_id: userId,
-        filename: batch.filename,
-        account_id: batch.account_id,
-        imported_at: batch.imported_at,
-        row_count: batch.row_count,
-        created_event_ids: batch.created_event_ids,
-        merged_event_ids: batch.merged_event_ids,
-        status: batch.status,
-      });
+    const payloadUpdatedEvents = updatedEvents.map((evt) => ({
+      id: evt.id,
+      notes: evt.notes,
+      category: evt.category,
+    }));
+
+    const { error } = await supabase.rpc('commit_import_batch', {
+      p_batch: payloadBatch,
+      p_new_events: payloadNewEvents,
+      p_updated_events: payloadUpdatedEvents,
+    });
 
     if (error) {
-      throw new Error(`Failed to record import batch: ${error.message}`);
+      throw new Error(`Failed to commit import batch atomically: ${error.message}`);
     }
   }
 

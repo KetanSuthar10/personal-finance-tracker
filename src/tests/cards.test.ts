@@ -180,4 +180,71 @@ describe('cards, statement bills, EMIs, and cash planning', () => {
     // Planning available = 672,000 - 310,000 - 200,000 = 162,000 paise (₹1,620.00)
     expect(planning.planning_available_paise).toBe(162000);
   });
+
+  it('projects multiple upcoming instalments within extended planning horizon (60 days)', () => {
+    const emiPlans: EmiPlan[] = [
+      {
+        id: 'emi-multimonth',
+        merchant: 'Gadget Store',
+        account_id: 'demo-card',
+        original_principal_paise: 6000000,
+        monthly_instalment_paise: 1000000, // ₹10,000.00 / month
+        total_tenure_months: 6,
+        instalments_billed: 0,
+        remaining_principal_paise: 6000000,
+        annual_interest_rate_pct: 0,
+        start_date: '2026-10-18',
+        next_due_date: '2026-10-25', // 1st instalment: Oct 25; 2nd instalment: Nov 25
+        status: 'active',
+      },
+    ];
+
+    const config: CashPlanningConfig = {
+      horizon_days: 60, // 60-day horizon captures both Oct 25 and Nov 25
+      emergency_buffer_buffer: 0,
+      emergency_buffer_paise: 100000,
+    } as any;
+
+    const planning = calculateCashPlanning(
+      5000000,
+      [],
+      emiPlans,
+      [],
+      config,
+      '2026-10-18'
+    );
+
+    // 2 instalments of ₹10,000.00 = ₹20,000.00 (2,000,000 paise)
+    expect(planning.standalone_emis_due_paise).toBe(2000000);
+    expect(planning.total_upcoming_obligations_paise).toBe(2000000);
+  });
+
+  it('excludes fully settled EMIs from upcoming obligations', () => {
+    const settledEmi: EmiPlan = {
+      id: 'emi-done',
+      merchant: 'Paid Off Appliance',
+      account_id: 'demo-card',
+      original_principal_paise: 3000000,
+      monthly_instalment_paise: 500000,
+      total_tenure_months: 6,
+      instalments_billed: 6, // All 6 billed
+      remaining_principal_paise: 0,
+      annual_interest_rate_pct: 12,
+      start_date: '2026-04-15',
+      next_due_date: '2026-10-20',
+      status: 'active',
+    };
+
+    const planning = calculateCashPlanning(
+      1000000,
+      [],
+      [settledEmi],
+      [],
+      { horizon_days: 30, emergency_buffer_paise: 0 },
+      '2026-10-18'
+    );
+
+    expect(planning.standalone_emis_due_paise).toBe(0);
+    expect(planning.total_upcoming_obligations_paise).toBe(0);
+  });
 });

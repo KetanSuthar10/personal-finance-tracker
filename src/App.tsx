@@ -16,6 +16,9 @@ import { FinancialEvent } from './domain/types';
 import { QuickCaptureModal } from './features/capture/QuickCaptureModal';
 import { AuthPage } from './features/auth/AuthPage';
 import { AccessDeniedPage } from './features/auth/AccessDeniedPage';
+import { OwnerBootstrapPage } from './features/auth/OwnerBootstrapPage';
+import { AuthErrorPage } from './features/auth/AuthErrorPage';
+import { ResetPasswordModal } from './features/auth/ResetPasswordModal';
 import { Loader2, ShieldCheck } from 'lucide-react';
 
 export const AppContent: React.FC = () => {
@@ -79,9 +82,9 @@ export const AppContent: React.FC = () => {
 };
 
 export const ProtectedApp: React.FC = () => {
-  const { user, isLoading, ownerStatus } = useAuth();
+  const { user, isLoading, ownerStatus, isPasswordRecovery } = useAuth();
 
-  if (isLoading) {
+  if (isLoading || (user && !ownerStatus)) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-400 gap-3">
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 mb-2">
@@ -89,7 +92,7 @@ export const ProtectedApp: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
-          <span className="text-sm font-medium text-slate-300">Checking persistent session...</span>
+          <span className="text-sm font-medium text-slate-300">Checking persistent session & authorization...</span>
         </div>
       </div>
     );
@@ -97,21 +100,42 @@ export const ProtectedApp: React.FC = () => {
 
   // Not signed in: render AuthPage
   if (!user) {
-    return <AuthPage />;
+    return (
+      <>
+        <AuthPage />
+        {isPasswordRecovery && <ResetPasswordModal />}
+      </>
+    );
   }
 
-  // Signed in, but not the authorized owner (acceptance test AT13)
-  if (ownerStatus?.ownerConfigured && !ownerStatus?.isOwner) {
+  // Password recovery active for signed-in user
+  if (isPasswordRecovery) {
+    return <ResetPasswordModal />;
+  }
+
+  // Unconfigured owner state: Master owner bootstrap flow
+  if (ownerStatus?.statusState === 'unconfigured' || (!ownerStatus?.ownerConfigured && !ownerStatus?.isOwner)) {
+    return <OwnerBootstrapPage />;
+  }
+
+  // Server-side verification error: Fail-closed error boundary
+  if (ownerStatus?.statusState === 'error') {
+    return <AuthErrorPage />;
+  }
+
+  // Signed in, but unauthorized non-owner: Deny access strictly (AT13)
+  if (ownerStatus?.statusState === 'denied' || !ownerStatus?.isOwner) {
     return <AccessDeniedPage />;
   }
 
-  // Authorized owner: render the full application
+  // Authorized owner: render the full application ledger
   return (
     <LedgerProvider>
       <AppContent />
     </LedgerProvider>
   );
 };
+
 
 export function App() {
   return (

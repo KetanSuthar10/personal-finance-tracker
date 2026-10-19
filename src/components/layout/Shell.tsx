@@ -3,8 +3,9 @@ import { Header } from './Header';
 import { Sidebar, TabId } from './Sidebar';
 import { MobileNav } from './MobileNav';
 import { Modal } from '../ui/Modal';
-import { FileSpreadsheet, CreditCard, Bot, Settings } from 'lucide-react';
+import { FileSpreadsheet, CreditCard, Bot, Settings, AlertTriangle, RefreshCw } from 'lucide-react';
 import { OfflineBanner } from '../common/OfflineBanner';
+import { useLedger } from '../../context/LedgerContext';
 
 export interface ShellProps {
   currentTab: TabId;
@@ -23,6 +24,19 @@ export const Shell: React.FC<ShellProps> = ({
 }) => {
   const [isMoreOpen, setIsMoreOpen] = useState(false);
 
+  let persistenceError: string | null = null;
+  let clearPersistenceError = () => {};
+  let refresh = async () => {};
+
+  try {
+    const ledger = useLedger();
+    persistenceError = ledger.persistenceError;
+    clearPersistenceError = ledger.clearPersistenceError;
+    refresh = ledger.refresh;
+  } catch {
+    // Graceful fallback if Shell rendered outside LedgerProvider
+  }
+
   const moreItems = [
     { id: 'imports' as TabId, label: 'Statements & Imports', icon: FileSpreadsheet, milestone: 'M2' as const },
     { id: 'commitments' as TabId, label: 'Cards & EMIs', icon: CreditCard, milestone: 'M4' as const },
@@ -33,6 +47,32 @@ export const Shell: React.FC<ShellProps> = ({
   return (
     <div className="flex h-screen w-full flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-hidden">
       <OfflineBanner />
+      {persistenceError && (
+        <div className="bg-rose-600 text-white text-xs px-4 py-2 flex items-center justify-between gap-3 shadow-md z-50 animate-fade-in">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <span>
+              <strong>Persistence Error:</strong> {persistenceError}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => refresh()}
+              className="flex items-center gap-1 px-2.5 py-1 bg-rose-700 hover:bg-rose-800 text-white rounded text-[11px] font-medium transition-colors"
+            >
+              <RefreshCw className="w-3 h-3" />
+              Retry Sync
+            </button>
+            <button
+              onClick={clearPersistenceError}
+              className="p-1 hover:bg-rose-700/60 rounded text-rose-200 hover:text-white transition-colors"
+              title="Dismiss warning"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
       <Header onOpenAddEntry={onOpenAddEntry} onOpenCapture={onOpenCapture} />
 
       <div className="flex flex-1 overflow-hidden">
